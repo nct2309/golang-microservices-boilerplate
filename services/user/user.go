@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/nct2309/golang-microservices-boilerplate/internal/core"
+
+	"github.com/nct2309/golang-microservices-boilerplate/shared/core/internal"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -27,7 +29,11 @@ const (
 
 // User represents a system user with authentication and authorization data
 type User struct {
+<<<<<<< HEAD
 	core.BaseEntity
+=======
+	internal.BaseEntity
+>>>>>>> 80f9819 (Init the repo)
 	Username    string     `json:"username" gorm:"uniqueIndex;not null"`
 	Email       string     `json:"email" gorm:"uniqueIndex;not null"`
 	Password    string     `json:"-" gorm:"not null"` // Password is never exposed in JSON
