@@ -1,0 +1,26 @@
+version: v1
+plugins:
+  # Generate Go code
+  - name: go
+    out: .
+    opt: paths=source_relative
+
+  # Generate gRPC Go code
+  - name: go-grpc
+    out: .
+    opt: paths=source_relative
+
+  # Generate gRPC-Gateway Go code
+  - name: grpc-gateway
+    out: .
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
+
+  # Generate OpenAPI definitions
+  - name: openapiv2
+    out: services/api-gateway/swagger
+    opt:
+      - logtostderr=true
+      # - allow_merge=true
+      # - merge_file_name=openapi.json

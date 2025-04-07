@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-gateway-ingress
+  namespace: ride-sharing
+#  annotations:
+#    kubernetes.io/ingress.class: "nginx" # Uncomment if using Nginx Ingress
+#    nginx.ingress.kubernetes.io/use-regex: "true"
+#    # Add HTTPS/TLS annotations here if needed:
+#    # cert-manager.io/cluster-issuer: "letsencrypt-prod" # Example for cert-manager
+#    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+#  ingressClassName: nginx # Uncomment if you have a specific IngressClass
+#  tls: # Uncomment and configure for HTTPS
+#  - hosts:
+#    - your-domain.com # Replace with your actual domain
+#    secretName: your-tls-secret # Replace with your TLS secret name
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix # Route all paths starting with / to the gateway
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8081

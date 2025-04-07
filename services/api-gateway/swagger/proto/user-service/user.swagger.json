@@ -1,0 +1,648 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "User Service API",
+    "description": "API for user management operations",
+    "version": "1.0",
+    "contact": {
+      "name": "User Service Team",
+      "email": "support@example.com"
+    }
+  },
+  "tags": [
+    {
+      "name": "UserService"
+    }
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/login": {
+      "post": {
+        "summary": "User login",
+        "description": "Authenticates a user and returns a JWT token upon successful login.",
+        "operationId": "UserService_Login",
+        "responses": {
+          "200": {
+            "description": "Login successful, token returned",
+            "schema": {
+              "$ref": "#/definitions/userLoginResponse"
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/userLoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "summary": "List users",
+        "description": "Retrieves a list of users with pagination support using offset and limit.",
+        "operationId": "UserService_ListUsers",
+        "responses": {
+          "200": {
+            "description": "List of users retrieved successfully",
+            "schema": {
+              "$ref": "#/definitions/userListUsersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "offset",
+            "description": "Using offset/limit is common for pagination\n\nNumber of items to skip before starting to collect the result set.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "default": "0"
+          },
+          {
+            "name": "limit",
+            "description": "Could add optional filtering parameters here, e.g., by role\n optional string role_filter = 3 [(...)]\n\nMaximum number of items to return.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "summary": "Create a new user",
+        "description": "Creates a new user account. Requires email, password, first name, last name, and role.",
+        "operationId": "UserService_CreateUser",
+        "responses": {
+          "200": {
+            "description": "User created successfully",
+            "schema": {
+              "$ref": "#/definitions/userUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Data required to create a new user account.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/userCreateUserRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/email/{email}": {
+      "get": {
+        "summary": "Find user by email",
+        "description": "Finds and retrieves a user by their email address.",
+        "operationId": "UserService_FindByEmail",
+        "responses": {
+          "200": {
+            "description": "User found successfully",
+            "schema": {
+              "$ref": "#/definitions/userUserResponse"
+            }
+          },
+          "404": {
+            "description": "User with specified email not found",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "email",
+            "description": "The email address of the user to search for.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "email"
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}": {
+      "get": {
+        "summary": "Get a user by ID",
+        "description": "Retrieves a user by their unique ID.",
+        "operationId": "UserService_GetUser",
+        "responses": {
+          "200": {
+            "description": "User details retrieved successfully",
+            "schema": {
+              "$ref": "#/definitions/userUserResponse"
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The unique identifier (UUID or similar) of the user to retrieve.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "summary": "Delete a user",
+        "description": "Deletes a user by their unique ID. This might be a soft delete depending on implementation.",
+        "operationId": "UserService_DeleteUser",
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "schema": {
+              "$ref": "#/definitions/userDeleteUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The unique identifier of the user to delete.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "put": {
+        "summary": "Update a user",
+        "description": "Updates an existing user's details. Only provided fields are updated.",
+        "operationId": "UserService_UpdateUser",
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "schema": {
+              "$ref": "#/definitions/userUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The unique identifier of the user to update (passed in URL path).",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserServiceUpdateUserBody"
+            }
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "UserServiceUpdateUserBody": {
+      "type": "object",
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "example": "Johnny",
+          "description": "Updated first name (optional). If omitted, value is unchanged.",
+          "title": "Use 'optional' keyword for fields that might not be sent"
+        },
+        "lastName": {
+          "type": "string",
+          "example": "Doe",
+          "description": "Updated last name (optional). If omitted, value is unchanged."
+        },
+        "password": {
+          "type": "string",
+          "format": "password",
+          "example": "NewS3cureP@ss!",
+          "description": "Updated password (optional, min 8 characters). If omitted, password is unchanged.",
+          "minLength": 8
+        },
+        "phone": {
+          "type": "string",
+          "example": "+14155552672",
+          "description": "Updated phone number (optional).",
+          "title": "Can add other updatable fields here (phone, address, etc.) marked as optional",
+          "pattern": "^\\+[1-9]\\d{1,14}$"
+        },
+        "address": {
+          "type": "string",
+          "example": "1 Loop Drive, Cupertino, CA 95014",
+          "description": "Updated address (optional)."
+        },
+        "age": {
+          "type": "integer",
+          "format": "int32",
+          "example": 31,
+          "description": "Updated age (optional)."
+        },
+        "profilePic": {
+          "type": "string",
+          "format": "url",
+          "example": "https://example.com/profiles/johndoe_v2.jpg",
+          "description": "Updated URL to profile picture (optional)."
+        },
+        "role": {
+          "type": "string",
+          "example": "admin",
+          "enum": [
+            "\"manager\"",
+            "\"admin\"",
+            "\"officer\""
+          ],
+          "description": "Updated user role (optional)."
+        }
+      },
+      "title": "Request to update a user"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "userCreateUserRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "example": "john.doe@example.com",
+          "description": "User's unique email address. Used for login."
+        },
+        "password": {
+          "type": "string",
+          "format": "password",
+          "example": "SecureP@ss123",
+          "description": "User's password (minimum 8 characters recommended).",
+          "minLength": 8
+        },
+        "firstName": {
+          "type": "string",
+          "example": "John",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "example": "Doe",
+          "description": "User's last name."
+        },
+        "role": {
+          "type": "string",
+          "example": "user",
+          "enum": [
+            "\"manager\"",
+            "\"admin\"",
+            "\"officer\""
+          ],
+          "default": "user",
+          "description": "User's role within the system (e.g., user, admin)."
+        },
+        "phone": {
+          "type": "string",
+          "example": "+14155552671",
+          "description": "User's phone number, preferably in E.164 format (optional).",
+          "title": "Optional fields don't need 'default', just 'example' is helpful",
+          "pattern": "^\\+[1-9]\\d{1,14}$"
+        },
+        "address": {
+          "type": "string",
+          "example": "1600 Amphitheatre Parkway, Mountain View, CA 94043",
+          "description": "User's full address (optional)."
+        },
+        "age": {
+          "type": "integer",
+          "format": "int32",
+          "example": 30,
+          "description": "User's age (optional)."
+        },
+        "profilePic": {
+          "type": "string",
+          "format": "url",
+          "example": "https://example.com/profiles/johndoe.jpg",
+          "description": "URL to user's profile picture (optional)."
+        }
+      },
+      "description": "Data required to create a new user account.",
+      "title": "Create User Payload",
+      "required": [
+        "email",
+        "password",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "userDeleteUserResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true,
+          "description": "True if the user was deleted successfully."
+        }
+      },
+      "description": "Indicates whether the deletion was successful.",
+      "title": "Deletion Confirmation"
+    },
+    "userListUsersResponse": {
+      "type": "object",
+      "properties": {
+        "users": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/userUserResponse"
+          },
+          "description": "The list of user objects found for the current page."
+        },
+        "total": {
+          "type": "string",
+          "format": "int64",
+          "example": 153,
+          "description": "Total number of users matching the criteria (across all pages)."
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32",
+          "example": 25,
+          "description": "The limit value used for this request."
+        },
+        "offset": {
+          "type": "integer",
+          "format": "int32",
+          "example": 50,
+          "description": "The offset value used for this request.",
+          "title": "total_pages is often calculated, maybe not needed explicitly if total/limit/offset are present\n int32 total_pages = 5;"
+        }
+      },
+      "description": "A list of users along with pagination details.",
+      "title": "Paginated User List"
+    },
+    "userLoginRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "example": "jane.doe@example.com",
+          "description": "User's email address for login."
+        },
+        "password": {
+          "type": "string",
+          "format": "password",
+          "example": "CorrectP@ssw0rd",
+          "description": "User's password for login."
+        }
+      },
+      "title": "Login Credentials",
+      "required": [
+        "email",
+        "password"
+      ]
+    },
+    "userLoginResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "format": "jwt",
+          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyNDI2MjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+          "description": "JWT authentication token to be used for subsequent authenticated requests."
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "int64",
+          "example": 1678901234,
+          "description": "Timestamp (Unix epoch seconds) when the token expires."
+        },
+        "user": {
+          "$ref": "#/definitions/userUserResponse",
+          "description": "Details of the logged-in user."
+        }
+      },
+      "title": "Login Result"
+    },
+    "userUserResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+          "description": "Unique identifier for the user.",
+          "readOnly": true
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "example": "jane.doe@example.com",
+          "description": "User's email address.",
+          "readOnly": true
+        },
+        "firstName": {
+          "type": "string",
+          "example": "Jane",
+          "description": "User's first name.",
+          "readOnly": true
+        },
+        "lastName": {
+          "type": "string",
+          "example": "Doe",
+          "description": "User's last name.",
+          "readOnly": true
+        },
+        "role": {
+          "type": "string",
+          "example": "officer",
+          "description": "User's role in the system.",
+          "readOnly": true
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64",
+          "example": 1678888000,
+          "description": "Timestamp (Unix epoch seconds) when the user account was created.",
+          "readOnly": true
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64",
+          "example": 1678900000,
+          "description": "Timestamp (Unix epoch seconds) when the user account was last updated.",
+          "readOnly": true
+        },
+        "deletedAt": {
+          "type": "string",
+          "format": "int64",
+          "example": 1678901234,
+          "description": "Timestamp (Unix epoch seconds) when the user was soft-deleted. Omitted if not deleted.",
+          "title": "Use google.protobuf.Timestamp for nullable time fields if needed, and handle zero value for int64",
+          "readOnly": true
+        },
+        "username": {
+          "type": "string",
+          "example": "janedoe99",
+          "description": "Unique username for the account (optional, distinct from email).",
+          "title": "Adding username field example",
+          "readOnly": true
+        },
+        "isActive": {
+          "type": "boolean",
+          "example": true,
+          "description": "Indicates whether the user account is currently active.",
+          "readOnly": true
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "format": "int64",
+          "example": 1678900500,
+          "description": "Timestamp (Unix epoch seconds) of the user's last login.",
+          "readOnly": true
+        },
+        "phone": {
+          "type": "string",
+          "example": "+14155552671",
+          "description": "User's phone number.",
+          "title": "Added phone/address to response for completeness",
+          "readOnly": true
+        },
+        "address": {
+          "type": "string",
+          "example": "1600 Amphitheatre Parkway, Mountain View, CA 94043",
+          "description": "User's full address.",
+          "readOnly": true
+        },
+        "age": {
+          "type": "integer",
+          "format": "int32",
+          "example": 30,
+          "description": "User's age.",
+          "readOnly": true
+        },
+        "profilePic": {
+          "type": "string",
+          "format": "url",
+          "example": "https://example.com/profiles/johndoe.jpg",
+          "description": "URL to user's profile picture.",
+          "readOnly": true
+        }
+      },
+      "title": "User Details"
+    }
+  }
+}

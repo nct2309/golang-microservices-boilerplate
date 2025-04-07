@@ -12,5 +12,3 @@ dist/
 
 # Include shared code
 !shared/
-
-proto/

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: ride-sharing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      serviceAccountName: api-gateway-sa
+      nodeSelector:
+        service: api-gateway
+      containers:
+      - name: api-gateway
+        image: api-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        envFrom:
+        - configMapRef:
+            name: api-gateway-config
+        env:
+        - name: USER_SERVICE_HOST
+          value: "user-service.ride-sharing.svc.cluster.local"
+        - name: USER_SERVICE_PORT
+          value: "9090"
+        - name: POD_NAMESPACE
+          value: "ride-sharing"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: ride-sharing
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8081
+    targetPort: 8081
+  type: LoadBalancer 

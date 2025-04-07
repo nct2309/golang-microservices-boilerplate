@@ -1,0 +1,24 @@
+# ConfigMap for User Service env variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-service-config
+  namespace: ride-sharing
+data:
+  DB_HOST: "ep-dry-recipe-a1xsq2aj-pooler.ap-southeast-1.aws.neon.tech"
+  DB_PORT: "543"
+  DB_NAME: "test"
+  DB_USER: "test_owner"
+  DB_PASSWORD: "npg_7wBPCKcbV6yH"
+  DB_SSL_MODE: "disable"
+  SERVER_APP_NAME: "User Service"
+  SERVER_SHUTDOWN_DELAY: "5s"
+  SERVER_LOGGING_ENABLED: "true"
+  LOG_LEVEL: "debug"
+  LOG_FORMAT: "json"
+  LOG_OUTPUT: "stdout"
+  APP_ENV: "development"
+  JWT_SECRET: "your_secret_key"
+  JWT_EXPIRY: "24h"
+  GRPC_HOST: "0.0.0.0"
+  GRPC_PORT: "9090" 
