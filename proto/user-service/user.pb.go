@@ -8,9 +8,14 @@ package user_service
 
 import (
 	_ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
+	core "golang-microservices-boilerplate/proto/core"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	_ "google.golang.org/protobuf/types/known/structpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -23,26 +28,186 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Request to create a new user
-type CreateUserRequest struct {
+// Represents the user entity
+type User struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
-	Email     string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password  string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	FirstName string                 `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName  string                 `protobuf:"bytes,4,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	Role      string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
-	// Optional fields don't need 'default', just 'example' is helpful
-	Phone         string `protobuf:"bytes,6,opt,name=phone,proto3" json:"phone,omitempty"`
-	Address       string `protobuf:"bytes,7,opt,name=address,proto3" json:"address,omitempty"`
-	Age           int32  `protobuf:"varint,8,opt,name=age,proto3" json:"age,omitempty"`
-	ProfilePic    string `protobuf:"bytes,9,opt,name=profile_pic,json=profilePic,proto3" json:"profile_pic,omitempty"`
+	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	DeletedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=deleted_at,json=deletedAt,proto3,oneof" json:"deleted_at,omitempty"`
+	Username  string                 `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
+	Email     string                 `protobuf:"bytes,6,opt,name=email,proto3" json:"email,omitempty"`
+	// Password is not included in responses
+	FirstName     string                 `protobuf:"bytes,7,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string                 `protobuf:"bytes,8,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	Role          string                 `protobuf:"bytes,9,opt,name=role,proto3" json:"role,omitempty"`
+	IsActive      bool                   `protobuf:"varint,10,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	LastLoginAt   *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=last_login_at,json=lastLoginAt,proto3,oneof" json:"last_login_at,omitempty"`
+	Phone         string                 `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
+	Address       string                 `protobuf:"bytes,13,opt,name=address,proto3" json:"address,omitempty"`
+	Age           int32                  `protobuf:"varint,14,opt,name=age,proto3" json:"age,omitempty"`
+	ProfilePic    string                 `protobuf:"bytes,15,opt,name=profile_pic,json=profilePic,proto3" json:"profile_pic,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *User) Reset() {
+	*x = User{}
+	mi := &file_proto_user_service_user_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *User) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*User) ProtoMessage() {}
+
+func (x *User) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use User.ProtoReflect.Descriptor instead.
+func (*User) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *User) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *User) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *User) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+func (x *User) GetDeletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DeletedAt
+	}
+	return nil
+}
+
+func (x *User) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *User) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *User) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *User) GetLastName() string {
+	if x != nil {
+		return x.LastName
+	}
+	return ""
+}
+
+func (x *User) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *User) GetIsActive() bool {
+	if x != nil {
+		return x.IsActive
+	}
+	return false
+}
+
+func (x *User) GetLastLoginAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastLoginAt
+	}
+	return nil
+}
+
+func (x *User) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *User) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *User) GetAge() int32 {
+	if x != nil {
+		return x.Age
+	}
+	return 0
+}
+
+func (x *User) GetProfilePic() string {
+	if x != nil {
+		return x.ProfilePic
+	}
+	return ""
+}
+
+// Request for creating a single user
+type CreateUserRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Fields corresponding to schema.UserCreateDTO
+	Username      string  `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string  `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Password      string  `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	FirstName     string  `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string  `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	Role          string  `protobuf:"bytes,6,opt,name=role,proto3" json:"role,omitempty"`
+	IsActive      *bool   `protobuf:"varint,7,opt,name=is_active,json=isActive,proto3,oneof" json:"is_active,omitempty"`
+	Phone         *string `protobuf:"bytes,8,opt,name=phone,proto3,oneof" json:"phone,omitempty"`
+	Address       *string `protobuf:"bytes,9,opt,name=address,proto3,oneof" json:"address,omitempty"`
+	Age           *int32  `protobuf:"varint,10,opt,name=age,proto3,oneof" json:"age,omitempty"`
+	ProfilePic    *string `protobuf:"bytes,11,opt,name=profile_pic,json=profilePic,proto3,oneof" json:"profile_pic,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateUserRequest) Reset() {
 	*x = CreateUserRequest{}
-	mi := &file_proto_user_service_user_proto_msgTypes[0]
+	mi := &file_proto_user_service_user_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -54,7 +219,7 @@ func (x *CreateUserRequest) String() string {
 func (*CreateUserRequest) ProtoMessage() {}
 
 func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_service_user_proto_msgTypes[0]
+	mi := &file_proto_user_service_user_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -67,7 +232,14 @@ func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserRequest.ProtoReflect.Descriptor instead.
 func (*CreateUserRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_service_user_proto_rawDescGZIP(), []int{0}
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CreateUserRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
 }
 
 func (x *CreateUserRequest) GetEmail() string {
@@ -105,213 +277,108 @@ func (x *CreateUserRequest) GetRole() string {
 	return ""
 }
 
+func (x *CreateUserRequest) GetIsActive() bool {
+	if x != nil && x.IsActive != nil {
+		return *x.IsActive
+	}
+	return false
+}
+
 func (x *CreateUserRequest) GetPhone() string {
-	if x != nil {
-		return x.Phone
-	}
-	return ""
-}
-
-func (x *CreateUserRequest) GetAddress() string {
-	if x != nil {
-		return x.Address
-	}
-	return ""
-}
-
-func (x *CreateUserRequest) GetAge() int32 {
-	if x != nil {
-		return x.Age
-	}
-	return 0
-}
-
-func (x *CreateUserRequest) GetProfilePic() string {
-	if x != nil {
-		return x.ProfilePic
-	}
-	return ""
-}
-
-// Request to get a user by ID
-type GetUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetUserRequest) Reset() {
-	*x = GetUserRequest{}
-	mi := &file_proto_user_service_user_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetUserRequest) ProtoMessage() {}
-
-func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_service_user_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
-func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_service_user_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *GetUserRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-// Request to update a user
-type UpdateUserRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// ID comes from the path, other fields are optional in the body
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// Use 'optional' keyword for fields that might not be sent
-	FirstName *string `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3,oneof" json:"first_name,omitempty"`
-	LastName  *string `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3,oneof" json:"last_name,omitempty"`
-	Password  *string `protobuf:"bytes,4,opt,name=password,proto3,oneof" json:"password,omitempty"`
-	// Can add other updatable fields here (phone, address, etc.) marked as optional
-	Phone         *string `protobuf:"bytes,5,opt,name=phone,proto3,oneof" json:"phone,omitempty"`
-	Address       *string `protobuf:"bytes,6,opt,name=address,proto3,oneof" json:"address,omitempty"`
-	Age           *int32  `protobuf:"varint,7,opt,name=age,proto3,oneof" json:"age,omitempty"`
-	ProfilePic    *string `protobuf:"bytes,8,opt,name=profile_pic,json=profilePic,proto3,oneof" json:"profile_pic,omitempty"`
-	Role          *string `protobuf:"bytes,9,opt,name=role,proto3,oneof" json:"role,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateUserRequest) Reset() {
-	*x = UpdateUserRequest{}
-	mi := &file_proto_user_service_user_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateUserRequest) ProtoMessage() {}
-
-func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_service_user_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateUserRequest.ProtoReflect.Descriptor instead.
-func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_service_user_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *UpdateUserRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *UpdateUserRequest) GetFirstName() string {
-	if x != nil && x.FirstName != nil {
-		return *x.FirstName
-	}
-	return ""
-}
-
-func (x *UpdateUserRequest) GetLastName() string {
-	if x != nil && x.LastName != nil {
-		return *x.LastName
-	}
-	return ""
-}
-
-func (x *UpdateUserRequest) GetPassword() string {
-	if x != nil && x.Password != nil {
-		return *x.Password
-	}
-	return ""
-}
-
-func (x *UpdateUserRequest) GetPhone() string {
 	if x != nil && x.Phone != nil {
 		return *x.Phone
 	}
 	return ""
 }
 
-func (x *UpdateUserRequest) GetAddress() string {
+func (x *CreateUserRequest) GetAddress() string {
 	if x != nil && x.Address != nil {
 		return *x.Address
 	}
 	return ""
 }
 
-func (x *UpdateUserRequest) GetAge() int32 {
+func (x *CreateUserRequest) GetAge() int32 {
 	if x != nil && x.Age != nil {
 		return *x.Age
 	}
 	return 0
 }
 
-func (x *UpdateUserRequest) GetProfilePic() string {
+func (x *CreateUserRequest) GetProfilePic() string {
 	if x != nil && x.ProfilePic != nil {
 		return *x.ProfilePic
 	}
 	return ""
 }
 
-func (x *UpdateUserRequest) GetRole() string {
-	if x != nil && x.Role != nil {
-		return *x.Role
-	}
-	return ""
+// Response for creating a single user
+type CreateUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"` // Example defined in User message
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-// Request to delete a user
-type DeleteUserRequest struct {
+func (x *CreateUserResponse) Reset() {
+	*x = CreateUserResponse{}
+	mi := &file_proto_user_service_user_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUserResponse) ProtoMessage() {}
+
+func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUserResponse.ProtoReflect.Descriptor instead.
+func (*CreateUserResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CreateUserResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+// Request for getting a user by ID
+type GetUserByIDRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteUserRequest) Reset() {
-	*x = DeleteUserRequest{}
+func (x *GetUserByIDRequest) Reset() {
+	*x = GetUserByIDRequest{}
 	mi := &file_proto_user_service_user_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteUserRequest) String() string {
+func (x *GetUserByIDRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteUserRequest) ProtoMessage() {}
+func (*GetUserByIDRequest) ProtoMessage() {}
 
-func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
+func (x *GetUserByIDRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_user_service_user_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -323,40 +390,40 @@ func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
-func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetUserByIDRequest.ProtoReflect.Descriptor instead.
+func (*GetUserByIDRequest) Descriptor() ([]byte, []int) {
 	return file_proto_user_service_user_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *DeleteUserRequest) GetId() string {
+func (x *GetUserByIDRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-// Response for user deletion
-type DeleteUserResponse struct {
+// Response for getting a user by ID
+type GetUserByIDResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"` // Example defined in User message
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteUserResponse) Reset() {
-	*x = DeleteUserResponse{}
+func (x *GetUserByIDResponse) Reset() {
+	*x = GetUserByIDResponse{}
 	mi := &file_proto_user_service_user_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteUserResponse) String() string {
+func (x *GetUserByIDResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteUserResponse) ProtoMessage() {}
+func (*GetUserByIDResponse) ProtoMessage() {}
 
-func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
+func (x *GetUserByIDResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_user_service_user_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -368,24 +435,24 @@ func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
-func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetUserByIDResponse.ProtoReflect.Descriptor instead.
+func (*GetUserByIDResponse) Descriptor() ([]byte, []int) {
 	return file_proto_user_service_user_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *DeleteUserResponse) GetSuccess() bool {
+func (x *GetUserByIDResponse) GetUser() *User {
 	if x != nil {
-		return x.Success
+		return x.User
 	}
-	return false
+	return nil
 }
 
-// Request to list users with pagination
+// Request for listing users with filtering and pagination
 type ListUsersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Using offset/limit is common for pagination
-	Offset        int32 `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
-	Limit         int32 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	// FilterOptions fields will be mapped to query parameters by the gateway
+	// Examples and defaults for these are defined in proto/core/common.proto
+	Options       *core.FilterOptions `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -420,29 +487,21 @@ func (*ListUsersRequest) Descriptor() ([]byte, []int) {
 	return file_proto_user_service_user_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ListUsersRequest) GetOffset() int32 {
+func (x *ListUsersRequest) GetOptions() *core.FilterOptions {
 	if x != nil {
-		return x.Offset
+		return x.Options
 	}
-	return 0
+	return nil
 }
 
-func (x *ListUsersRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
-// Response containing a list of users
+// Response for listing users
 type ListUsersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Users         []*UserResponse        `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
-	Total         int64                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
-	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset        int32                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Users []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"` // Example defined in User message
+	// PaginationInfo fields examples/defaults are defined in proto/core/common.proto
+	PaginationInfo *core.PaginationInfo `protobuf:"bytes,2,opt,name=pagination_info,json=paginationInfo,proto3" json:"pagination_info,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ListUsersResponse) Reset() {
@@ -475,32 +534,733 @@ func (*ListUsersResponse) Descriptor() ([]byte, []int) {
 	return file_proto_user_service_user_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ListUsersResponse) GetUsers() []*UserResponse {
+func (x *ListUsersResponse) GetUsers() []*User {
 	if x != nil {
 		return x.Users
 	}
 	return nil
 }
 
-func (x *ListUsersResponse) GetTotal() int64 {
+func (x *ListUsersResponse) GetPaginationInfo() *core.PaginationInfo {
 	if x != nil {
-		return x.Total
+		return x.PaginationInfo
 	}
-	return 0
+	return nil
 }
 
-func (x *ListUsersResponse) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
+// Request for updating a user
+type UpdateUserRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Fields corresponding to schema.UserUpdateDTO (using wrappers for optionality)
+	Username *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=username,proto3,oneof" json:"username,omitempty"`
+	Email    *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=email,proto3,oneof" json:"email,omitempty"`
+	// Password updates might need a separate, dedicated RPC for security
+	FirstName     *wrapperspb.StringValue `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3,oneof" json:"first_name,omitempty"`
+	LastName      *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3,oneof" json:"last_name,omitempty"`
+	Role          *wrapperspb.StringValue `protobuf:"bytes,6,opt,name=role,proto3,oneof" json:"role,omitempty"`
+	IsActive      *wrapperspb.BoolValue   `protobuf:"bytes,7,opt,name=is_active,json=isActive,proto3,oneof" json:"is_active,omitempty"`
+	Phone         *wrapperspb.StringValue `protobuf:"bytes,8,opt,name=phone,proto3,oneof" json:"phone,omitempty"`
+	Address       *wrapperspb.StringValue `protobuf:"bytes,9,opt,name=address,proto3,oneof" json:"address,omitempty"`
+	Age           *wrapperspb.Int32Value  `protobuf:"bytes,10,opt,name=age,proto3,oneof" json:"age,omitempty"`
+	ProfilePic    *wrapperspb.StringValue `protobuf:"bytes,11,opt,name=profile_pic,json=profilePic,proto3,oneof" json:"profile_pic,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListUsersResponse) GetOffset() int32 {
+func (x *UpdateUserRequest) Reset() {
+	*x = UpdateUserRequest{}
+	mi := &file_proto_user_service_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserRequest) ProtoMessage() {}
+
+func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[7]
 	if x != nil {
-		return x.Offset
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
 	}
-	return 0
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateUserRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateUserRequest) GetUsername() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Username
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetEmail() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Email
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetFirstName() *wrapperspb.StringValue {
+	if x != nil {
+		return x.FirstName
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetLastName() *wrapperspb.StringValue {
+	if x != nil {
+		return x.LastName
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetRole() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Role
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetIsActive() *wrapperspb.BoolValue {
+	if x != nil {
+		return x.IsActive
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetPhone() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Phone
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetAddress() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Address
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetAge() *wrapperspb.Int32Value {
+	if x != nil {
+		return x.Age
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetProfilePic() *wrapperspb.StringValue {
+	if x != nil {
+		return x.ProfilePic
+	}
+	return nil
+}
+
+// Response for updating a user
+type UpdateUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"` // Example defined in User message
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserResponse) Reset() {
+	*x = UpdateUserResponse{}
+	mi := &file_proto_user_service_user_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserResponse) ProtoMessage() {}
+
+func (x *UpdateUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserResponse.ProtoReflect.Descriptor instead.
+func (*UpdateUserResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UpdateUserResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+// Request for deleting a user (soft or hard delete)
+type DeleteUserRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Add field to distinguish between soft and hard delete
+	HardDelete    bool `protobuf:"varint,2,opt,name=hard_delete,json=hardDelete,proto3" json:"hard_delete,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserRequest) Reset() {
+	*x = DeleteUserRequest{}
+	mi := &file_proto_user_service_user_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserRequest) ProtoMessage() {}
+
+func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *DeleteUserRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DeleteUserRequest) GetHardDelete() bool {
+	if x != nil {
+		return x.HardDelete
+	}
+	return false
+}
+
+// Request for finding users with specific filters
+type FindUsersWithFilterRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *core.FilterOptions    `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FindUsersWithFilterRequest) Reset() {
+	*x = FindUsersWithFilterRequest{}
+	mi := &file_proto_user_service_user_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FindUsersWithFilterRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FindUsersWithFilterRequest) ProtoMessage() {}
+
+func (x *FindUsersWithFilterRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FindUsersWithFilterRequest.ProtoReflect.Descriptor instead.
+func (*FindUsersWithFilterRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *FindUsersWithFilterRequest) GetOptions() *core.FilterOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+// Response for finding users with specific filters
+type FindUsersWithFilterResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Users          []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`                                         // Example defined in User message
+	PaginationInfo *core.PaginationInfo   `protobuf:"bytes,2,opt,name=pagination_info,json=paginationInfo,proto3" json:"pagination_info,omitempty"` // Example defined in core.PaginationInfo message
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *FindUsersWithFilterResponse) Reset() {
+	*x = FindUsersWithFilterResponse{}
+	mi := &file_proto_user_service_user_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FindUsersWithFilterResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FindUsersWithFilterResponse) ProtoMessage() {}
+
+func (x *FindUsersWithFilterResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FindUsersWithFilterResponse.ProtoReflect.Descriptor instead.
+func (*FindUsersWithFilterResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *FindUsersWithFilterResponse) GetUsers() []*User {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+func (x *FindUsersWithFilterResponse) GetPaginationInfo() *core.PaginationInfo {
+	if x != nil {
+		return x.PaginationInfo
+	}
+	return nil
+}
+
+// Request for creating multiple users
+type CreateUsersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         []*CreateUserRequest   `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateUsersRequest) Reset() {
+	*x = CreateUsersRequest{}
+	mi := &file_proto_user_service_user_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUsersRequest) ProtoMessage() {}
+
+func (x *CreateUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUsersRequest.ProtoReflect.Descriptor instead.
+func (*CreateUsersRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CreateUsersRequest) GetUsers() []*CreateUserRequest {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+// Response for creating multiple users
+type CreateUsersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"` // Example defined in User message
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateUsersResponse) Reset() {
+	*x = CreateUsersResponse{}
+	mi := &file_proto_user_service_user_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUsersResponse) ProtoMessage() {}
+
+func (x *CreateUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUsersResponse.ProtoReflect.Descriptor instead.
+func (*CreateUsersResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CreateUsersResponse) GetUsers() []*User {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+// Defines a single item for the bulk update request
+type UpdateUserItem struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Reuse optional fields from UpdateUserRequest (excluding id)
+	Username      *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=username,proto3,oneof" json:"username,omitempty"`                        // Corrected escaping
+	Email         *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=email,proto3,oneof" json:"email,omitempty"`                              // Corrected escaping
+	FirstName     *wrapperspb.StringValue `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3,oneof" json:"first_name,omitempty"`     // Corrected escaping
+	LastName      *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3,oneof" json:"last_name,omitempty"`        // Corrected escaping
+	Role          *wrapperspb.StringValue `protobuf:"bytes,6,opt,name=role,proto3,oneof" json:"role,omitempty"`                                // Corrected escaping
+	IsActive      *wrapperspb.BoolValue   `protobuf:"bytes,7,opt,name=is_active,json=isActive,proto3,oneof" json:"is_active,omitempty"`        // Corrected escaping (bool doesn't need quotes)
+	Phone         *wrapperspb.StringValue `protobuf:"bytes,8,opt,name=phone,proto3,oneof" json:"phone,omitempty"`                              // Corrected escaping
+	Address       *wrapperspb.StringValue `protobuf:"bytes,9,opt,name=address,proto3,oneof" json:"address,omitempty"`                          // Corrected escaping
+	Age           *wrapperspb.Int32Value  `protobuf:"bytes,10,opt,name=age,proto3,oneof" json:"age,omitempty"`                                 // Corrected escaping (number doesn't need quotes)
+	ProfilePic    *wrapperspb.StringValue `protobuf:"bytes,11,opt,name=profile_pic,json=profilePic,proto3,oneof" json:"profile_pic,omitempty"` // Corrected escaping
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserItem) Reset() {
+	*x = UpdateUserItem{}
+	mi := &file_proto_user_service_user_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserItem) ProtoMessage() {}
+
+func (x *UpdateUserItem) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserItem.ProtoReflect.Descriptor instead.
+func (*UpdateUserItem) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *UpdateUserItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateUserItem) GetUsername() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Username
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetEmail() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Email
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetFirstName() *wrapperspb.StringValue {
+	if x != nil {
+		return x.FirstName
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetLastName() *wrapperspb.StringValue {
+	if x != nil {
+		return x.LastName
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetRole() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Role
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetIsActive() *wrapperspb.BoolValue {
+	if x != nil {
+		return x.IsActive
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetPhone() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Phone
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetAddress() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Address
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetAge() *wrapperspb.Int32Value {
+	if x != nil {
+		return x.Age
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetProfilePic() *wrapperspb.StringValue {
+	if x != nil {
+		return x.ProfilePic
+	}
+	return nil
+}
+
+// Request for updating multiple users based on a list of items
+type UpdateUsersRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Replace filter and individual fields with a list of items
+	Items         []*UpdateUserItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUsersRequest) Reset() {
+	*x = UpdateUsersRequest{}
+	mi := &file_proto_user_service_user_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUsersRequest) ProtoMessage() {}
+
+func (x *UpdateUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUsersRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUsersRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *UpdateUsersRequest) GetItems() []*UpdateUserItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// Response for updating multiple users (now empty)
+type UpdateUsersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUsersResponse) Reset() {
+	*x = UpdateUsersResponse{}
+	mi := &file_proto_user_service_user_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUsersResponse) ProtoMessage() {}
+
+func (x *UpdateUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUsersResponse.ProtoReflect.Descriptor instead.
+func (*UpdateUsersResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{16}
+}
+
+// Request for deleting multiple users by IDs (soft or hard delete)
+type DeleteUsersRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Remove filter, add IDs
+	Ids []string `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+	// Add hard_delete flag
+	HardDelete    bool `protobuf:"varint,2,opt,name=hard_delete,json=hardDelete,proto3" json:"hard_delete,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUsersRequest) Reset() {
+	*x = DeleteUsersRequest{}
+	mi := &file_proto_user_service_user_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUsersRequest) ProtoMessage() {}
+
+func (x *DeleteUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUsersRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUsersRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *DeleteUsersRequest) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
+func (x *DeleteUsersRequest) GetHardDelete() bool {
+	if x != nil {
+		return x.HardDelete
+	}
+	return false
+}
+
+// Response for deleting multiple users (now empty)
+type DeleteUsersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUsersResponse) Reset() {
+	*x = DeleteUsersResponse{}
+	mi := &file_proto_user_service_user_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUsersResponse) ProtoMessage() {}
+
+func (x *DeleteUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUsersResponse.ProtoReflect.Descriptor instead.
+func (*DeleteUsersResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{18}
 }
 
 // Request for user login
@@ -514,7 +1274,7 @@ type LoginRequest struct {
 
 func (x *LoginRequest) Reset() {
 	*x = LoginRequest{}
-	mi := &file_proto_user_service_user_proto_msgTypes[7]
+	mi := &file_proto_user_service_user_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -526,7 +1286,7 @@ func (x *LoginRequest) String() string {
 func (*LoginRequest) ProtoMessage() {}
 
 func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_service_user_proto_msgTypes[7]
+	mi := &file_proto_user_service_user_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -539,7 +1299,7 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_service_user_proto_rawDescGZIP(), []int{7}
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *LoginRequest) GetEmail() string {
@@ -556,19 +1316,20 @@ func (x *LoginRequest) GetPassword() string {
 	return ""
 }
 
-// Response for successful login
+// Response for user login
 type LoginResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	ExpiresAt     int64                  `protobuf:"varint,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	User          *UserResponse          `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"` // Example defined in User message
+	AccessToken   string                 `protobuf:"bytes,2,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,3,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	ExpiresAt     int64                  `protobuf:"varint,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LoginResponse) Reset() {
 	*x = LoginResponse{}
-	mi := &file_proto_user_service_user_proto_msgTypes[8]
+	mi := &file_proto_user_service_user_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -580,7 +1341,7 @@ func (x *LoginResponse) String() string {
 func (*LoginResponse) ProtoMessage() {}
 
 func (x *LoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_service_user_proto_msgTypes[8]
+	mi := &file_proto_user_service_user_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -593,12 +1354,26 @@ func (x *LoginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
 func (*LoginResponse) Descriptor() ([]byte, []int) {
-	return file_proto_user_service_user_proto_rawDescGZIP(), []int{8}
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *LoginResponse) GetToken() string {
+func (x *LoginResponse) GetUser() *User {
 	if x != nil {
-		return x.Token
+		return x.User
+	}
+	return nil
+}
+
+func (x *LoginResponse) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *LoginResponse) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
 	}
 	return ""
 }
@@ -610,36 +1385,29 @@ func (x *LoginResponse) GetExpiresAt() int64 {
 	return 0
 }
 
-func (x *LoginResponse) GetUser() *UserResponse {
-	if x != nil {
-		return x.User
-	}
-	return nil
-}
-
-// Request to find user by email
-type FindByEmailRequest struct {
+// Request for refreshing authentication tokens
+type RefreshRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *FindByEmailRequest) Reset() {
-	*x = FindByEmailRequest{}
-	mi := &file_proto_user_service_user_proto_msgTypes[9]
+func (x *RefreshRequest) Reset() {
+	*x = RefreshRequest{}
+	mi := &file_proto_user_service_user_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FindByEmailRequest) String() string {
+func (x *RefreshRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FindByEmailRequest) ProtoMessage() {}
+func (*RefreshRequest) ProtoMessage() {}
 
-func (x *FindByEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_service_user_proto_msgTypes[9]
+func (x *RefreshRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -650,58 +1418,43 @@ func (x *FindByEmailRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FindByEmailRequest.ProtoReflect.Descriptor instead.
-func (*FindByEmailRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_service_user_proto_rawDescGZIP(), []int{9}
+// Deprecated: Use RefreshRequest.ProtoReflect.Descriptor instead.
+func (*RefreshRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *FindByEmailRequest) GetEmail() string {
+func (x *RefreshRequest) GetRefreshToken() string {
 	if x != nil {
-		return x.Email
+		return x.RefreshToken
 	}
 	return ""
 }
 
-// Response containing user information (used by multiple RPCs)
-type UserResponse struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Email     string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	FirstName string                 `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName  string                 `protobuf:"bytes,4,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	Role      string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
-	CreatedAt int64                  `protobuf:"varint,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt int64                  `protobuf:"varint,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	// Use google.protobuf.Timestamp for nullable time fields if needed, and handle zero value for int64
-	DeletedAt *int64 `protobuf:"varint,8,opt,name=deleted_at,json=deletedAt,proto3,oneof" json:"deleted_at,omitempty"`
-	// Adding username field example
-	Username    string `protobuf:"bytes,9,opt,name=username,proto3" json:"username,omitempty"`
-	IsActive    bool   `protobuf:"varint,10,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
-	LastLoginAt int64  `protobuf:"varint,11,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
-	// Added phone/address to response for completeness
-	Phone         string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
-	Address       string `protobuf:"bytes,13,opt,name=address,proto3" json:"address,omitempty"`
-	Age           int32  `protobuf:"varint,14,opt,name=age,proto3" json:"age,omitempty"`
-	ProfilePic    string `protobuf:"bytes,15,opt,name=profile_pic,json=profilePic,proto3" json:"profile_pic,omitempty"`
+// Response for refreshing authentication tokens
+type RefreshResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UserResponse) Reset() {
-	*x = UserResponse{}
-	mi := &file_proto_user_service_user_proto_msgTypes[10]
+func (x *RefreshResponse) Reset() {
+	*x = RefreshResponse{}
+	mi := &file_proto_user_service_user_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UserResponse) String() string {
+func (x *RefreshResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UserResponse) ProtoMessage() {}
+func (*RefreshResponse) ProtoMessage() {}
 
-func (x *UserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_service_user_proto_msgTypes[10]
+func (x *RefreshResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_service_user_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -712,269 +1465,256 @@ func (x *UserResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UserResponse.ProtoReflect.Descriptor instead.
-func (*UserResponse) Descriptor() ([]byte, []int) {
-	return file_proto_user_service_user_proto_rawDescGZIP(), []int{10}
+// Deprecated: Use RefreshResponse.ProtoReflect.Descriptor instead.
+func (*RefreshResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_service_user_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *UserResponse) GetId() string {
+func (x *RefreshResponse) GetAccessToken() string {
 	if x != nil {
-		return x.Id
+		return x.AccessToken
 	}
 	return ""
 }
 
-func (x *UserResponse) GetEmail() string {
+func (x *RefreshResponse) GetRefreshToken() string {
 	if x != nil {
-		return x.Email
+		return x.RefreshToken
 	}
 	return ""
 }
 
-func (x *UserResponse) GetFirstName() string {
+func (x *RefreshResponse) GetExpiresAt() int64 {
 	if x != nil {
-		return x.FirstName
-	}
-	return ""
-}
-
-func (x *UserResponse) GetLastName() string {
-	if x != nil {
-		return x.LastName
-	}
-	return ""
-}
-
-func (x *UserResponse) GetRole() string {
-	if x != nil {
-		return x.Role
-	}
-	return ""
-}
-
-func (x *UserResponse) GetCreatedAt() int64 {
-	if x != nil {
-		return x.CreatedAt
+		return x.ExpiresAt
 	}
 	return 0
-}
-
-func (x *UserResponse) GetUpdatedAt() int64 {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return 0
-}
-
-func (x *UserResponse) GetDeletedAt() int64 {
-	if x != nil && x.DeletedAt != nil {
-		return *x.DeletedAt
-	}
-	return 0
-}
-
-func (x *UserResponse) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-func (x *UserResponse) GetIsActive() bool {
-	if x != nil {
-		return x.IsActive
-	}
-	return false
-}
-
-func (x *UserResponse) GetLastLoginAt() int64 {
-	if x != nil {
-		return x.LastLoginAt
-	}
-	return 0
-}
-
-func (x *UserResponse) GetPhone() string {
-	if x != nil {
-		return x.Phone
-	}
-	return ""
-}
-
-func (x *UserResponse) GetAddress() string {
-	if x != nil {
-		return x.Address
-	}
-	return ""
-}
-
-func (x *UserResponse) GetAge() int32 {
-	if x != nil {
-		return x.Age
-	}
-	return 0
-}
-
-func (x *UserResponse) GetProfilePic() string {
-	if x != nil {
-		return x.ProfilePic
-	}
-	return ""
 }
 
 var File_proto_user_service_user_proto protoreflect.FileDescriptor
 
 const file_proto_user_service_user_proto_rawDesc = "" +
 	"\n" +
-	"\x1dproto/user-service/user.proto\x12\x04user\x1a.protoc-gen-openapiv2/options/annotations.proto\x1a\x1cgoogle/api/annotations.proto\"\x90\b\n" +
-	"\x11CreateUserRequest\x12g\n" +
-	"\x05email\x18\x01 \x01(\tBQ\x92AN2,User's unique email address. Used for login.J\x16\"john.doe@example.com\"\xa2\x02\x05emailR\x05email\x12s\n" +
-	"\bpassword\x18\x02 \x01(\tBW\x92AT23User's password (minimum 8 characters recommended).J\x0f\"SecureP@ss123\"\x80\x01\b\xa2\x02\bpasswordR\bpassword\x12>\n" +
+	"\x1dproto/user-service/user.proto\x12\vuserservice\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17proto/core/common.proto\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xda\r\n" +
+	"\x04User\x12j\n" +
+	"\x02id\x18\x01 \x01(\tBZ\x92AW2-Unique identifier for the user (UUID format).J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"R\x02id\x12\x91\x01\n" +
 	"\n" +
-	"first_name\x18\x03 \x01(\tB\x1f\x92A\x1c2\x12User's first name.J\x06\"John\"R\tfirstName\x12:\n" +
-	"\tlast_name\x18\x04 \x01(\tB\x1d\x92A\x1a2\x11User's last name.J\x05\"Doe\"R\blastName\x12{\n" +
-	"\x04role\x18\x05 \x01(\tBg\x92Ad22User's role within the system (e.g., user, admin).:\x04userJ\x06\"user\"\xf2\x02\t\"manager\"\xf2\x02\a\"admin\"\xf2\x02\t\"officer\"R\x04role\x12z\n" +
-	"\x05phone\x18\x06 \x01(\tBd\x92Aa2;User's phone number, preferably in E.164 format (optional).J\x0e\"+14155552671\"\x8a\x01\x11^\\+[1-9]\\d{1,14}$R\x05phone\x12t\n" +
-	"\aaddress\x18\a \x01(\tBZ\x92AW2\x1fUser's full address (optional).J4\"1600 Amphitheatre Parkway, Mountain View, CA 94043\"R\aaddress\x129\n" +
-	"\x03age\x18\b \x01(\x05B'\x92A$2\x16User's age (optional).J\x0230\xa2\x02\x05int32R\x03age\x12\x81\x01\n" +
-	"\vprofile_pic\x18\t \x01(\tB`\x92A]2)URL to user's profile picture (optional).J*\"https://example.com/profiles/johndoe.jpg\"\xa2\x02\x03urlR\n" +
-	"profilePic:s\x92Ap\n" +
-	"n*\x13Create User Payload2+Data required to create a new user account.\xd2\x01\x05email\xd2\x01\bpassword\xd2\x01\n" +
-	"first_name\xd2\x01\tlast_name\"\xa3\x01\n" +
-	"\x0eGetUserRequest\x12\x84\x01\n" +
-	"\x02id\x18\x01 \x01(\tBt\x92Aq2@The unique identifier (UUID or similar) of the user to retrieve.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"\xa2\x02\x04uuidR\x02id:\n" +
-	"\x92A\a\n" +
-	"\x05\xd2\x01\x02id\"\xf8\b\n" +
-	"\x11UpdateUserRequest\x12\x85\x01\n" +
-	"\x02id\x18\x01 \x01(\tBu\x92Ar2AThe unique identifier of the user to update (passed in URL path).J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"\xa2\x02\x04uuidR\x02id\x12q\n" +
+	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampBV\x92AS29Timestamp when the user was created (RFC3339 UTC format).J\x16\"2023-01-15T10:30:00Z\"R\tcreatedAt\x12\x96\x01\n" +
 	"\n" +
-	"first_name\x18\x02 \x01(\tBM\x92AJ2>Updated first name (optional). If omitted, value is unchanged.J\b\"Johnny\"H\x00R\tfirstName\x88\x01\x01\x12k\n" +
-	"\tlast_name\x18\x03 \x01(\tBI\x92AF2=Updated last name (optional). If omitted, value is unchanged.J\x05\"Doe\"H\x01R\blastName\x88\x01\x01\x12\x97\x01\n" +
-	"\bpassword\x18\x04 \x01(\tBv\x92As2QUpdated password (optional, min 8 characters). If omitted, password is unchanged.J\x10\"NewS3cureP@ss!\"\x80\x01\b\xa2\x02\bpasswordH\x02R\bpassword\x88\x01\x01\x12d\n" +
-	"\x05phone\x18\x05 \x01(\tBI\x92AF2 Updated phone number (optional).J\x0e\"+14155552672\"\x8a\x01\x11^\\+[1-9]\\d{1,14}$H\x03R\x05phone\x88\x01\x01\x12d\n" +
-	"\aaddress\x18\x06 \x01(\tBE\x92AB2\x1bUpdated address (optional).J#\"1 Loop Drive, Cupertino, CA 95014\"H\x04R\aaddress\x88\x01\x01\x12?\n" +
-	"\x03age\x18\a \x01(\x05B(\x92A%2\x17Updated age (optional).J\x0231\xa2\x02\x05int32H\x05R\x03age\x88\x01\x01\x12\x8a\x01\n" +
-	"\vprofile_pic\x18\b \x01(\tBd\x92Aa2*Updated URL to profile picture (optional).J-\"https://example.com/profiles/johndoe_v2.jpg\"\xa2\x02\x03urlH\x06R\n" +
-	"profilePic\x88\x01\x01\x12f\n" +
-	"\x04role\x18\t \x01(\tBM\x92AJ2\x1dUpdated user role (optional).J\a\"admin\"\xf2\x02\t\"manager\"\xf2\x02\a\"admin\"\xf2\x02\t\"officer\"H\aR\x04role\x88\x01\x01B\r\n" +
-	"\v_first_nameB\f\n" +
+	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB[\x92AX2>Timestamp when the user was last updated (RFC3339 UTC format).J\x16\"2023-01-16T11:00:00Z\"R\tupdatedAt\x12\xb0\x01\n" +
 	"\n" +
-	"_last_nameB\v\n" +
-	"\t_passwordB\b\n" +
+	"deleted_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampBp\x92Am2STimestamp when the user was soft-deleted (RFC3339 UTC format). Null if not deleted.J\x16\"2023-01-17T12:00:00Z\"H\x00R\tdeletedAt\x88\x01\x01\x12I\n" +
+	"\busername\x18\x05 \x01(\tB-\x92A*2\x1dUnique username for the user.J\t\"johndoe\"R\busername\x12U\n" +
+	"\x05email\x18\x06 \x01(\tB?\x92A<2\"Unique email address for the user.J\x16\"john.doe@example.com\"R\x05email\x12>\n" +
+	"\n" +
+	"first_name\x18\a \x01(\tB\x1f\x92A\x1c2\x12User's first name.J\x06\"John\"R\tfirstName\x12:\n" +
+	"\tlast_name\x18\b \x01(\tB\x1d\x92A\x1a2\x11User's last name.J\x05\"Doe\"R\blastName\x12V\n" +
+	"\x04role\x18\t \x01(\tBB\x92A?22User's role (e.g., 'admin', 'manager', 'officer').J\t\"officer\"R\x04role\x12W\n" +
+	"\tis_active\x18\n" +
+	" \x01(\bB:\x92A72(Indicates if the user account is active.:\x05falseJ\x04trueR\bisActive\x12\xb3\x01\n" +
+	"\rlast_login_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampBn\x92Ak2QTimestamp of the user's last login (RFC3339 UTC format). Null if never logged in.J\x16\"2023-01-18T09:00:00Z\"H\x01R\vlastLoginAt\x88\x01\x01\x12I\n" +
+	"\x05phone\x18\f \x01(\tB3\x92A02\x1fUser's phone number (optional).J\r\"+1234567890\"R\x05phone\x12Q\n" +
+	"\aaddress\x18\r \x01(\tB7\x92A42\x1aUser's address (optional).J\x16\"123 Main St, Anytown\"R\aaddress\x121\n" +
+	"\x03age\x18\x0e \x01(\x05B\x1f\x92A\x1c2\x16User's age (optional).J\x0230R\x03age\x12\x7f\n" +
+	"\vprofile_pic\x18\x0f \x01(\tB^\x92A[2-URL to the user's profile picture (optional).J*\"https://example.com/profiles/johndoe.jpg\"R\n" +
+	"profilePic:\x8d\x01\x92A\x89\x01\n" +
+	"\x86\x01*\x04User2 Represents a user in the system.\xd2\x01\x02id\xd2\x01\n" +
+	"created_at\xd2\x01\n" +
+	"updated_at\xd2\x01\busername\xd2\x01\x05email\xd2\x01\n" +
+	"first_name\xd2\x01\tlast_name\xd2\x01\x04role\xd2\x01\tis_activeB\r\n" +
+	"\v_deleted_atB\x10\n" +
+	"\x0e_last_login_at\"\xa4\t\n" +
+	"\x11CreateUserRequest\x12D\n" +
+	"\busername\x18\x01 \x01(\tB(\x92A%2\x18Desired unique username.J\t\"janedoe\"R\busername\x12P\n" +
+	"\x05email\x18\x02 \x01(\tB:\x92A72\x1dDesired unique email address.J\x16\"jane.doe@example.com\"R\x05email\x12j\n" +
+	"\bpassword\x18\x03 \x01(\tBN\x92AK2+User's desired password (min 8 characters).J\x11\"StrongP@ssw0rd!\"\xa2\x02\bpasswordR\bpassword\x12>\n" +
+	"\n" +
+	"first_name\x18\x04 \x01(\tB\x1f\x92A\x1c2\x12User's first name.J\x06\"Jane\"R\tfirstName\x12:\n" +
+	"\tlast_name\x18\x05 \x01(\tB\x1d\x92A\x1a2\x11User's last name.J\x05\"Doe\"R\blastName\x12\x8e\x01\n" +
+	"\x04role\x18\x06 \x01(\tBz\x92Aw2_User's role (e.g., 'admin', 'manager', 'officer'). Defaults to 'officer' if omitted or invalid.:\t\"officer\"J\t\"officer\"R\x04role\x12b\n" +
+	"\tis_active\x18\a \x01(\bB@\x92A=2-Set initial active status. Defaults to false.:\x05falseJ\x05falseH\x00R\bisActive\x88\x01\x01\x12N\n" +
+	"\x05phone\x18\b \x01(\tB3\x92A02\x1fUser's phone number (optional).J\r\"+1987654321\"H\x01R\x05phone\x88\x01\x01\x12W\n" +
+	"\aaddress\x18\t \x01(\tB8\x92A52\x1aUser's address (optional).J\x17\"456 Oak Ave, Sometown\"H\x02R\aaddress\x88\x01\x01\x126\n" +
+	"\x03age\x18\n" +
+	" \x01(\x05B\x1f\x92A\x1c2\x16User's age (optional).J\x0228H\x03R\x03age\x88\x01\x01\x12\x84\x01\n" +
+	"\vprofile_pic\x18\v \x01(\tB^\x92A[2-URL to the user's profile picture (optional).J*\"https://example.com/profiles/janedoe.jpg\"H\x04R\n" +
+	"profilePic\x88\x01\x01:v\x92As\n" +
+	"q*\x13Create User Request2#Data required to create a new user.\xd2\x01\busername\xd2\x01\x05email\xd2\x01\bpassword\xd2\x01\n" +
+	"first_name\xd2\x01\tlast_nameB\f\n" +
+	"\n" +
+	"_is_activeB\b\n" +
 	"\x06_phoneB\n" +
 	"\n" +
 	"\b_addressB\x06\n" +
 	"\x04_ageB\x0e\n" +
-	"\f_profile_picB\a\n" +
-	"\x05_role\"\x91\x01\n" +
-	"\x11DeleteUserRequest\x12p\n" +
-	"\x02id\x18\x01 \x01(\tB`\x92A]2,The unique identifier of the user to delete.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"\xa2\x02\x04uuidR\x02id:\n" +
-	"\x92A\a\n" +
-	"\x05\xd2\x01\x02id\"\xb3\x01\n" +
-	"\x12DeleteUserResponse\x12O\n" +
-	"\asuccess\x18\x01 \x01(\bB5\x92A22*True if the user was deleted successfully.J\x04trueR\asuccess:L\x92AI\n" +
-	"G*\x15Deletion Confirmation2.Indicates whether the deletion was successful.\"\xe2\x01\n" +
-	"\x10ListUsersRequest\x12m\n" +
-	"\x06offset\x18\x01 \x01(\x05BU\x92AR2BNumber of items to skip before starting to collect the result set.:\x010J\x010\xa2\x02\x05int32R\x06offset\x12_\n" +
-	"\x05limit\x18\x02 \x01(\x05BI\x92AF2\"Maximum number of items to return.:\x0210J\x0225Y\x00\x00\x00\x00\x00\x00Y@i\x00\x00\x00\x00\x00\x00\xf0?\xa2\x02\x05int32R\x05limit\"\xce\x03\n" +
-	"\x11ListUsersResponse\x12c\n" +
-	"\x05users\x18\x01 \x03(\v2\x12.user.UserResponseB9\x92A624The list of user objects found for the current page.R\x05users\x12g\n" +
-	"\x05total\x18\x02 \x01(\x03BQ\x92AN2?Total number of users matching the criteria (across all pages).J\x03153\xa2\x02\x05int64R\x05total\x12M\n" +
-	"\x05limit\x18\x03 \x01(\x05B7\x92A42&The limit value used for this request.J\x0225\xa2\x02\x05int32R\x05limit\x12P\n" +
-	"\x06offset\x18\x04 \x01(\x05B8\x92A52'The offset value used for this request.J\x0250\xa2\x02\x05int32R\x06offset:J\x92AG\n" +
-	"E*\x13Paginated User List2.A list of users along with pagination details.\"\xf2\x01\n" +
-	"\fLoginRequest\x12Z\n" +
-	"\x05email\x18\x01 \x01(\tBD\x92AA2\x1fUser's email address for login.J\x16\"jane.doe@example.com\"\xa2\x02\x05emailR\x05email\x12Y\n" +
-	"\bpassword\x18\x02 \x01(\tB=\x92A:2\x1aUser's password for login.J\x11\"CorrectP@ssw0rd\"\xa2\x02\bpasswordR\bpassword:+\x92A(\n" +
-	"&*\x11Login Credentials\xd2\x01\x05email\xd2\x01\bpassword\"\x87\x04\n" +
-	"\rLoginResponse\x12\xa3\x02\n" +
-	"\x05token\x18\x01 \x01(\tB\x8c\x02\x92A\x88\x022JJWT authentication token to be used for subsequent authenticated requests.J\xb3\x01\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyNDI2MjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\"\xa2\x02\x03jwtR\x05token\x12n\n" +
+	"\f_profile_pic\"\x82\x01\n" +
+	"\x12CreateUserResponse\x12%\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.userservice.UserR\x04user:E\x92AB\n" +
+	"@*\x14Create User Response2(Contains the newly created user details.\"\xbe\x01\n" +
+	"\x12GetUserByIDRequest\x12^\n" +
+	"\x02id\x18\x01 \x01(\tBN\x92AK2!The UUID of the user to retrieve.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"R\x02id:H\x92AE\n" +
+	"C*\x16Get User By ID Request2)Specifies the ID of the user to retrieve.\"\x89\x01\n" +
+	"\x13GetUserByIDResponse\x12%\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.userservice.UserR\x04user:K\x92AH\n" +
+	"F*\x17Get User By ID Response2+Contains the details of the requested user.\"\x9f\x01\n" +
+	"\x10ListUsersRequest\x12-\n" +
+	"\aoptions\x18\x01 \x01(\v2\x13.core.FilterOptionsR\aoptions:\\\x92AY\n" +
+	"W*\x12List Users Request2AOptions for filtering, sorting, and paginating the list of users.\"\xc9\x01\n" +
+	"\x11ListUsersResponse\x12'\n" +
+	"\x05users\x18\x01 \x03(\v2\x11.userservice.UserR\x05users\x12=\n" +
+	"\x0fpagination_info\x18\x02 \x01(\v2\x14.core.PaginationInfoR\x0epaginationInfo:L\x92AI\n" +
+	"G*\x13List Users Response20A paginated list of users matching the criteria.\"\xc6\n" +
 	"\n" +
-	"expires_at\x18\x02 \x01(\x03BO\x92AL26Timestamp (Unix epoch seconds) when the token expires.J\n" +
-	"1678901234\xa2\x02\x05int64R\texpiresAt\x12K\n" +
-	"\x04user\x18\x03 \x01(\v2\x12.user.UserResponseB#\x92A 2\x1eDetails of the logged-in user.R\x04user:\x13\x92A\x10\n" +
-	"\x0e*\fLogin Result\"\x8b\x01\n" +
-	"\x12FindByEmailRequest\x12f\n" +
-	"\x05email\x18\x01 \x01(\tBP\x92AM2,The email address of the user to search for.J\x15\"find.me@example.com\"\xa2\x02\x05emailR\x05email:\r\x92A\n" +
+	"\x11UpdateUserRequest\x12\\\n" +
+	"\x02id\x18\x01 \x01(\tBL\x92AI2\x1fThe UUID of the user to update.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"R\x02id\x12c\n" +
+	"\busername\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueB$\x92A!2\rNew username.J\x10\"johndoeupdated\"H\x00R\busername\x88\x01\x01\x12p\n" +
+	"\x05email\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueB7\x92A42\x12New email address.J\x1e\"john.doe.updated@example.com\"H\x01R\x05email\x88\x01\x01\x12b\n" +
 	"\n" +
-	"\b\xd2\x01\x05email\"\xf1\v\n" +
-	"\fUserResponse\x12e\n" +
-	"\x02id\x18\x01 \x01(\tBU\x92AR2\x1fUnique identifier for the user.@\x01J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"\xa2\x02\x04uuidR\x02id\x12R\n" +
-	"\x05email\x18\x02 \x01(\tB<\x92A92\x15User's email address.@\x01J\x16\"jane.doe@example.com\"\xa2\x02\x05emailR\x05email\x12@\n" +
+	"first_name\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueB \x92A\x1d2\x0fNew first name.J\n" +
+	"\"Jonathan\"H\x02R\tfirstName\x88\x01\x01\x12Z\n" +
+	"\tlast_name\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueB\x1a\x92A\x172\x0eNew last name.J\x05\"Doe\"H\x03R\blastName\x88\x01\x01\x12P\n" +
+	"\x04role\x18\x06 \x01(\v2\x1c.google.protobuf.StringValueB\x19\x92A\x162\tNew role.J\t\"manager\"H\x04R\x04role\x88\x01\x01\x12_\n" +
+	"\tis_active\x18\a \x01(\v2\x1a.google.protobuf.BoolValueB!\x92A\x1e2\x15Update active status.J\x05falseH\x05R\bisActive\x88\x01\x01\x12^\n" +
+	"\x05phone\x18\b \x01(\v2\x1c.google.protobuf.StringValueB%\x92A\"2\x11New phone number.J\r\"+1122334455\"H\x06R\x05phone\x88\x01\x01\x12i\n" +
+	"\aaddress\x18\t \x01(\v2\x1c.google.protobuf.StringValueB,\x92A)2\fNew address.J\x19\"789 Pine Ln, Otherville\"H\aR\aaddress\x88\x01\x01\x12E\n" +
+	"\x03age\x18\n" +
+	" \x01(\v2\x1b.google.protobuf.Int32ValueB\x11\x92A\x0e2\bNew age.J\x0231H\bR\x03age\x88\x01\x01\x12\x90\x01\n" +
+	"\vprofile_pic\x18\v \x01(\v2\x1c.google.protobuf.StringValueBL\x92AI2\x18New profile picture URL.J-\"https://example.com/profiles/johndoe_v2.jpg\"H\tR\n" +
+	"profilePic\x88\x01\x01:k\x92Ah\n" +
+	"f*\x13Update User Request2JData for updating an existing user. Include only the fields to be changed.\xd2\x01\x02idB\v\n" +
+	"\t_usernameB\b\n" +
+	"\x06_emailB\r\n" +
+	"\v_first_nameB\f\n" +
 	"\n" +
-	"first_name\x18\x03 \x01(\tB!\x92A\x1e2\x12User's first name.@\x01J\x06\"Jane\"R\tfirstName\x12<\n" +
-	"\tlast_name\x18\x04 \x01(\tB\x1f\x92A\x1c2\x11User's last name.@\x01J\x05\"Doe\"R\blastName\x12@\n" +
-	"\x04role\x18\x05 \x01(\tB,\x92A)2\x1aUser's role in the system.@\x01J\t\"officer\"R\x04role\x12{\n" +
+	"_last_nameB\a\n" +
+	"\x05_roleB\f\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\x03B\\\x92AY2ATimestamp (Unix epoch seconds) when the user account was created.@\x01J\n" +
-	"1678888000\xa2\x02\x05int64R\tcreatedAt\x12\x80\x01\n" +
+	"_is_activeB\b\n" +
+	"\x06_phoneB\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\x03Ba\x92A^2FTimestamp (Unix epoch seconds) when the user account was last updated.@\x01J\n" +
-	"1678900000\xa2\x02\x05int64R\tupdatedAt\x12\x95\x01\n" +
+	"\b_addressB\x06\n" +
+	"\x04_ageB\x0e\n" +
+	"\f_profile_pic\"|\n" +
+	"\x12UpdateUserResponse\x12%\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.userservice.UserR\x04user:?\x92A<\n" +
+	":*\x14Update User Response2\"Contains the updated user details.\"\xf9\x02\n" +
+	"\x11DeleteUserRequest\x12\\\n" +
+	"\x02id\x18\x01 \x01(\tBL\x92AI2\x1fThe UUID of the user to delete.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"R\x02id\x12\x8d\x01\n" +
+	"\vhard_delete\x18\x02 \x01(\bBl\x92Ai2YIf true, performs a permanent (hard) delete. If false or omitted, performs a soft delete.:\x05falseJ\x05falseR\n" +
+	"hardDelete:v\x92As\n" +
+	"q*\x13Delete User Request2ZSpecifies the ID of the user to delete and whether it should be a permanent (hard) delete.\"\xc0\x02\n" +
+	"\x1aFindUsersWithFilterRequest\x12\x8d\x01\n" +
+	"\aoptions\x18\x01 \x01(\v2\x13.core.FilterOptionsB^\x92A[2YFiltering, pagination and sorting options (see core.FilterOptions for defaults/examples).R\aoptions:\x91\x01\x92A\x8d\x01\n" +
+	"\x8a\x01*\x1eFind Users With Filter Request2hAdvanced search criteria for users, using filters, pagination, and sorting defined within FilterOptions.\"\xef\x01\n" +
+	"\x1bFindUsersWithFilterResponse\x12'\n" +
+	"\x05users\x18\x01 \x03(\v2\x11.userservice.UserR\x05users\x12=\n" +
+	"\x0fpagination_info\x18\x02 \x01(\v2\x14.core.PaginationInfoR\x0epaginationInfo:h\x92Ae\n" +
+	"c*\x1fFind Users With Filter Response2@A paginated list of users matching the advanced search criteria.\"\xa4\x01\n" +
+	"\x12CreateUsersRequest\x124\n" +
+	"\x05users\x18\x01 \x03(\v2\x1e.userservice.CreateUserRequestR\x05users:X\x92AU\n" +
+	"S*\x1bCreate Users Request (Bulk)24A list of user creation requests for bulk insertion.\"\x9e\x01\n" +
+	"\x13CreateUsersResponse\x12'\n" +
+	"\x05users\x18\x01 \x03(\v2\x11.userservice.UserR\x05users:^\x92A[\n" +
+	"Y*\x1cCreate Users Response (Bulk)29A list containing the details of the newly created users.\"\xcb\n" +
 	"\n" +
-	"deleted_at\x18\b \x01(\x03Bq\x92An2VTimestamp (Unix epoch seconds) when the user was soft-deleted. Omitted if not deleted.@\x01J\n" +
-	"1678901234\xa2\x02\x05int64H\x00R\tdeletedAt\x88\x01\x01\x12p\n" +
-	"\busername\x18\t \x01(\tBT\x92AQ2@Unique username for the account (optional, distinct from email).@\x01J\v\"janedoe99\"R\busername\x12a\n" +
-	"\tis_active\x18\n" +
-	" \x01(\bBD\x92AA27Indicates whether the user account is currently active.@\x01J\x04trueR\bisActive\x12w\n" +
-	"\rlast_login_at\x18\v \x01(\x03BS\x92AP28Timestamp (Unix epoch seconds) of the user's last login.@\x01J\n" +
-	"1678900500\xa2\x02\x05int64R\vlastLoginAt\x12A\n" +
-	"\x05phone\x18\f \x01(\tB+\x92A(2\x14User's phone number.@\x01J\x0e\"+14155552671\"R\x05phone\x12k\n" +
-	"\aaddress\x18\r \x01(\tBQ\x92AN2\x14User's full address.@\x01J4\"1600 Amphitheatre Parkway, Mountain View, CA 94043\"R\aaddress\x120\n" +
-	"\x03age\x18\x0e \x01(\x05B\x1e\x92A\x1b2\vUser's age.@\x01J\x0230\xa2\x02\x05int32R\x03age\x12x\n" +
-	"\vprofile_pic\x18\x0f \x01(\tBW\x92AT2\x1eURL to user's profile picture.@\x01J*\"https://example.com/profiles/johndoe.jpg\"\xa2\x02\x03urlR\n" +
-	"profilePic:\x13\x92A\x10\n" +
-	"\x0e*\fUser DetailsB\r\n" +
-	"\v_deleted_at2\xa9\x0f\n" +
-	"\vUserService\x12\x92\x02\n" +
+	"\x0eUpdateUserItem\x12\\\n" +
+	"\x02id\x18\x01 \x01(\tBL\x92AI2\x1fThe UUID of the user to update.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"R\x02id\x12d\n" +
+	"\busername\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueB%\x92A\"2\rNew username.J\x11\"updatedusername\"H\x00R\busername\x88\x01\x01\x12m\n" +
+	"\x05email\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueB4\x92A12\x12New email address.J\x1b\"updated.email@example.com\"H\x01R\x05email\x88\x01\x01\x12j\n" +
 	"\n" +
-	"CreateUser\x12\x17.user.CreateUserRequest\x1a\x12.user.UserResponse\"\xd6\x01\x92A\xba\x01\n" +
-	"\x05Users\x12\x11Create a new user\x1aVCreates a new user account. Requires email, password, first name, last name, and role.JF\n" +
-	"\x03200\x12?\n" +
-	"\x19User created successfully\x12\"\n" +
-	" \x1a\x1e#/definitions/userUserResponse\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/api/v1/users\x12\xfe\x01\n" +
-	"\aGetUser\x12\x14.user.GetUserRequest\x1a\x12.user.UserResponse\"\xc8\x01\x92A\xaa\x01\n" +
-	"\x05Users\x12\x10Get a user by ID\x1a$Retrieves a user by their unique ID.JP\n" +
-	"\x03200\x12I\n" +
-	"#User details retrieved successfully\x12\"\n" +
-	" \x1a\x1e#/definitions/userUserResponseJ\x17\n" +
-	"\x03404\x12\x10\n" +
-	"\x0eUser not found\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/users/{id}\x12\x82\x02\n" +
+	"first_name\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueB(\x92A%2\x0fNew first name.J\x12\"UpdatedFirstName\"H\x02R\tfirstName\x88\x01\x01\x12f\n" +
+	"\tlast_name\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueB&\x92A#2\x0eNew last name.J\x11\"UpdatedLastName\"H\x03R\blastName\x88\x01\x01\x12P\n" +
+	"\x04role\x18\x06 \x01(\v2\x1c.google.protobuf.StringValueB\x19\x92A\x162\tNew role.J\t\"manager\"H\x04R\x04role\x88\x01\x01\x12^\n" +
+	"\tis_active\x18\a \x01(\v2\x1a.google.protobuf.BoolValueB \x92A\x1d2\x15Update active status.J\x04trueH\x05R\bisActive\x88\x01\x01\x12^\n" +
+	"\x05phone\x18\b \x01(\v2\x1c.google.protobuf.StringValueB%\x92A\"2\x11New phone number.J\r\"+1555000111\"H\x06R\x05phone\x88\x01\x01\x12`\n" +
+	"\aaddress\x18\t \x01(\v2\x1c.google.protobuf.StringValueB#\x92A 2\fNew address.J\x10\"999 Updated St\"H\aR\aaddress\x88\x01\x01\x12E\n" +
+	"\x03age\x18\n" +
+	" \x01(\v2\x1b.google.protobuf.Int32ValueB\x11\x92A\x0e2\bNew age.J\x0240H\bR\x03age\x88\x01\x01\x12\x8d\x01\n" +
+	"\vprofile_pic\x18\v \x01(\v2\x1c.google.protobuf.StringValueBI\x92AF2\x18New profile picture URL.J*\"https://example.com/profiles/updated.jpg\"H\tR\n" +
+	"profilePic\x88\x01\x01:n\x92Ak\n" +
+	"i*\x10Update User Item2PSpecifies the ID and the fields to update for a single user in a bulk operation.\xd2\x01\x02idB\v\n" +
+	"\t_usernameB\b\n" +
+	"\x06_emailB\r\n" +
+	"\v_first_nameB\f\n" +
 	"\n" +
-	"UpdateUser\x12\x17.user.UpdateUserRequest\x1a\x12.user.UserResponse\"\xc6\x01\x92A\xa5\x01\n" +
-	"\x05Users\x12\rUpdate a user\x1aEUpdates an existing user's details. Only provided fields are updated.JF\n" +
-	"\x03200\x12?\n" +
-	"\x19User updated successfully\x12\"\n" +
-	" \x1a\x1e#/definitions/userUserResponse\x82\xd3\xe4\x93\x02\x17:\x01*\x1a\x12/api/v1/users/{id}\x12\xa1\x02\n" +
+	"_last_nameB\a\n" +
+	"\x05_roleB\f\n" +
 	"\n" +
-	"DeleteUser\x12\x17.user.DeleteUserRequest\x1a\x18.user.DeleteUserResponse\"\xdf\x01\x92A\xc1\x01\n" +
-	"\x05Users\x12\rDelete a user\x1a[Deletes a user by their unique ID. This might be a soft delete depending on implementation.JL\n" +
-	"\x03200\x12E\n" +
-	"\x19User deleted successfully\x12(\n" +
-	"&\x1a$#/definitions/userDeleteUserResponse\x82\xd3\xe4\x93\x02\x14*\x12/api/v1/users/{id}\x12\x8e\x02\n" +
-	"\tListUsers\x12\x16.user.ListUsersRequest\x1a\x17.user.ListUsersResponse\"\xcf\x01\x92A\xb6\x01\n" +
+	"_is_activeB\b\n" +
+	"\x06_phoneB\n" +
+	"\n" +
+	"\b_addressB\x06\n" +
+	"\x04_ageB\x0e\n" +
+	"\f_profile_pic\"\x89\x02\n" +
+	"\x12UpdateUsersRequest\x12\x84\x01\n" +
+	"\x05items\x18\x01 \x03(\v2\x1b.userservice.UpdateUserItemBQ\x92AN2LList of user updates. Each item must contain an ID and the fields to modify.R\x05items:l\x92Ai\n" +
+	"g*\x1bUpdate Users Request (Bulk)2HA list of users to update, each specifying an ID and the data to change.\"|\n" +
+	"\x13UpdateUsersResponse:e\x92Ab\n" +
+	"`*\x1cUpdate Users Response (Bulk)2@Indicates success of the bulk update operation (empty response).\"\xa9\x03\n" +
+	"\x12DeleteUsersRequest\x12\x86\x01\n" +
+	"\x03ids\x18\x01 \x03(\tBt\x92Aq2\x1dList of user UUIDs to delete.JP[\"a1b2c3d4-e5f6-7890-1234-567890abcdef\", \"b2c3d4e5-f6a7-8901-2345-67890abcdef0\"]R\x03ids\x12\x8d\x01\n" +
+	"\vhard_delete\x18\x02 \x01(\bBl\x92Ai2YIf true, performs a permanent (hard) delete. If false or omitted, performs a soft delete.:\x05falseJ\x05falseR\n" +
+	"hardDelete:z\x92Aw\n" +
+	"u*\x1bDelete Users Request (Bulk)2PA list of user IDs to delete and whether it should be a permanent (hard) delete.\xd2\x01\x03ids\"|\n" +
+	"\x13DeleteUsersResponse:e\x92Ab\n" +
+	"`*\x1cDelete Users Response (Bulk)2@Indicates success of the bulk delete operation (empty response).\"\xfd\x01\n" +
+	"\fLoginRequest\x12H\n" +
+	"\x05email\x18\x01 \x01(\tB2\x92A/2\x15User's email address.J\x16\"john.doe@example.com\"R\x05email\x12K\n" +
+	"\bpassword\x18\x02 \x01(\tB/\x92A,2\x10User's password.J\r\"password123\"\xa2\x02\bpasswordR\bpassword:V\x92AS\n" +
+	"Q*\rLogin Request2-Credentials required for user authentication.\xd2\x01\x05email\xd2\x01\bpassword\"\xeb\x05\n" +
+	"\rLoginResponse\x12%\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.userservice.UserR\x04user\x12\xf1\x01\n" +
+	"\faccess_token\x18\x02 \x01(\tB\xcd\x01\x92A\xc9\x012'JWT access token for API authorization.J\x9d\x01\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\"R\vaccessToken\x12\xf6\x01\n" +
+	"\rrefresh_token\x18\x03 \x01(\tB\xd0\x01\x92A\xcc\x012.JWT refresh token to obtain new access tokens.J\x99\x01\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicmVmcmVzaCI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.9dxFj_KbboLCHdO0XAGna4z0aT4p4yMEQQHuDmPrzy8\"R\frefreshToken\x12g\n" +
+	"\n" +
+	"expires_at\x18\x04 \x01(\x03BH\x92AE27Unix timestamp (seconds) when the access token expires.J\n" +
+	"1678886400R\texpiresAt:]\x92AZ\n" +
+	"X*\x0eLogin Response2FContains user details and authentication tokens upon successful login.\"\xd7\x02\n" +
+	"\x0eRefreshRequest\x12\xde\x01\n" +
+	"\rrefresh_token\x18\x01 \x01(\tB\xb8\x01\x92A\xb4\x012\x16The JWT refresh token.J\x99\x01\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicmVmcmVzaCI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.9dxFj_KbboLCHdO0XAGna4z0aT4p4yMEQQHuDmPrzy8\"R\frefreshToken:d\x92Aa\n" +
+	"_*\x0fRefresh Request2<Requires a valid refresh token to obtain a new access token.\xd2\x01\rrefresh_token\"\xc5\x05\n" +
+	"\x0fRefreshResponse\x12\xe8\x01\n" +
+	"\faccess_token\x18\x01 \x01(\tB\xc4\x01\x92A\xc0\x012\x1eNewly issued JWT access token.J\x9d\x01\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\"R\vaccessToken\x12\xfb\x01\n" +
+	"\rrefresh_token\x18\x02 \x01(\tB\xd5\x01\x92A\xd1\x0123The refresh token (often the same one is returned).J\x99\x01\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicmVmcmVzaCI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.9dxFj_KbboLCHdO0XAGna4z0aT4p4yMEQQHuDmPrzy8\"R\frefreshToken\x12k\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\x03BL\x92AI2;Unix timestamp (seconds) when the new access token expires.J\n" +
+	"1678889400R\texpiresAt:\\\x92AY\n" +
+	"W*\x10Refresh Response2CContains a new access token and potentially the same refresh token.2\xe9\x12\n" +
+	"\vUserService\x12\x97\x01\n" +
+	"\x06Create\x12\x1e.userservice.CreateUserRequest\x1a\x1f.userservice.CreateUserResponse\"L\x92A1\n" +
+	"\x05Users\x12\vCreate User\x1a\x1bCreates a new user account.\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/api/v1/users\x12\xb5\x01\n" +
+	"\aGetByID\x12\x1f.userservice.GetUserByIDRequest\x1a .userservice.GetUserByIDResponse\"g\x92AJ\n" +
+	"\x05Users\x12\x0eGet User by ID\x1a1Retrieves details of a specific user by their ID.\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/users/{id}\x12\xbc\x01\n" +
+	"\x04List\x12\x1d.userservice.ListUsersRequest\x1a\x1e.userservice.ListUsersResponse\"u\x92A]\n" +
 	"\x05Users\x12\n" +
-	"List users\x1aIRetrieves a list of users with pagination support using offset and limit.JV\n" +
-	"\x03200\x12O\n" +
-	"$List of users retrieved successfully\x12'\n" +
-	"%\x1a##/definitions/userListUsersResponse\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/users\x12\x9e\x02\n" +
-	"\x05Login\x12\x12.user.LoginRequest\x1a\x13.user.LoginResponse\"\xeb\x01\x92A\xcf\x01\n" +
+	"List Users\x1aHRetrieves a paginated list of users, with filtering and sorting options.\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/users\x12\xad\x01\n" +
+	"\x06Update\x12\x1e.userservice.UpdateUserRequest\x1a\x1f.userservice.UpdateUserResponse\"b\x92AB\n" +
+	"\x05Users\x12\vUpdate User\x1a,Updates specific fields of an existing user.\x82\xd3\xe4\x93\x02\x17:\x01*2\x12/api/v1/users/{id}\x12\xea\x01\n" +
+	"\x06Delete\x12\x1e.userservice.DeleteUserRequest\x1a\x16.google.protobuf.Empty\"\xa7\x01\x92A\x89\x01\n" +
+	"\x05Users\x12\x17Delete User (Soft/Hard)\x1agDeletes a user. Defaults to soft delete. Set 'hard_delete=true' query parameter for permanent deletion.\x82\xd3\xe4\x93\x02\x14*\x12/api/v1/users/{id}\x12\x82\x02\n" +
+	"\x0eFindWithFilter\x12'.userservice.FindUsersWithFilterRequest\x1a(.userservice.FindUsersWithFilterResponse\"\x9c\x01\x92Az\n" +
+	"\x05Users\x12\x16Find Users with Filter\x1aYPerforms an advanced search for users using complex filters provided in the request body.\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/users/search\x12\xda\x01\n" +
+	"\n" +
+	"CreateMany\x12\x1f.userservice.CreateUsersRequest\x1a .userservice.CreateUsersResponse\"\x88\x01\x92Aa\n" +
+	"\fUsers (Bulk)\x12\x1cCreate Multiple Users (Bulk)\x1a3Creates multiple user accounts in a single request.\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/api/v1/users/bulk/create\x12\xe9\x01\n" +
+	"\n" +
+	"UpdateMany\x12\x1f.userservice.UpdateUsersRequest\x1a\x16.google.protobuf.Empty\"\xa1\x01\x92Az\n" +
+	"\fUsers (Bulk)\x12\x1cUpdate Multiple Users (Bulk)\x1aLUpdates multiple users based on a list of IDs and corresponding update data.\x82\xd3\xe4\x93\x02\x1e:\x01*2\x19/api/v1/users/bulk/update\x12\xa3\x02\n" +
+	"\n" +
+	"DeleteMany\x12\x1f.userservice.DeleteUsersRequest\x1a\x16.google.protobuf.Empty\"\xdb\x01\x92A\xb3\x01\n" +
+	"\fUsers (Bulk)\x12'Delete Multiple Users (Bulk, Soft/Hard)\x1azDeletes multiple users by ID. Defaults to soft delete. Set 'hard_delete' field in the request body for permanent deletion.\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/api/v1/users/bulk/delete\x12\xb5\x01\n" +
+	"\x05Login\x12\x19.userservice.LoginRequest\x1a\x1a.userservice.LoginResponse\"u\x92AU\n" +
 	"\x0eAuthentication\x12\n" +
-	"User login\x1aCAuthenticates a user and returns a JWT token upon successful login.JN\n" +
-	"\x03200\x12G\n" +
-	" Login successful, token returned\x12#\n" +
-	"!\x1a\x1f#/definitions/userLoginResponseJ\x1c\n" +
-	"\x03401\x12\x15\n" +
-	"\x13Invalid credentials\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/api/v1/login\x12\xa8\x02\n" +
-	"\vFindByEmail\x12\x18.user.FindByEmailRequest\x1a\x12.user.UserResponse\"\xea\x01\x92A\xc3\x01\n" +
-	"\x05Users\x12\x12Find user by email\x1a2Finds and retrieves a user by their email address.JD\n" +
-	"\x03200\x12=\n" +
-	"\x17User found successfully\x12\"\n" +
-	" \x1a\x1e#/definitions/userUserResponseJ,\n" +
-	"\x03404\x12%\n" +
-	"#User with specified email not found\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/users/email/{email}B\xc8\x01\x92A\x8f\x01\x12e\n" +
-	"\x10User Service API\x12\"API for user management operations\"(\n" +
-	"\x11User Service Team\x1a\x13support@example.com2\x031.0*\x02\x01\x022\x10application/json:\x10application/jsonZ3golang-microservices-boilerplate/proto/user-serviceb\x06proto3"
+	"User Login\x1a7Authenticates a user and returns access/refresh tokens.\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12\xc0\x01\n" +
+	"\aRefresh\x12\x1b.userservice.RefreshRequest\x1a\x1c.userservice.RefreshResponse\"z\x92AX\n" +
+	"\x0eAuthentication\x12\rRefresh Token\x1a7Obtains a new access token using a valid refresh token.\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/auth/refresh\x1a=\x92A:\x128Operations related to user management and authenticationB\x86\x02\x92A\xcd\x01\x12C\n" +
+	"\x10User Service API\x12*API for managing users and authentication.2\x031.0*\x02\x01\x022\x10application/json:\x10application/jsonZL\n" +
+	"J\n" +
+	"\n" +
+	"BearerAuth\x12<\b\x02\x12'JWT Bearer token (e.g., 'Bearer ey...')\x1a\rAuthorization \x02b\x10\n" +
+	"\x0e\n" +
+	"\n" +
+	"BearerAuth\x12\x00Z3golang-microservices-boilerplate/proto/user-serviceb\x06proto3"
 
 var (
 	file_proto_user_service_user_proto_rawDescOnce sync.Once
@@ -988,42 +1728,104 @@ func file_proto_user_service_user_proto_rawDescGZIP() []byte {
 	return file_proto_user_service_user_proto_rawDescData
 }
 
-var file_proto_user_service_user_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_proto_user_service_user_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_proto_user_service_user_proto_goTypes = []any{
-	(*CreateUserRequest)(nil),  // 0: user.CreateUserRequest
-	(*GetUserRequest)(nil),     // 1: user.GetUserRequest
-	(*UpdateUserRequest)(nil),  // 2: user.UpdateUserRequest
-	(*DeleteUserRequest)(nil),  // 3: user.DeleteUserRequest
-	(*DeleteUserResponse)(nil), // 4: user.DeleteUserResponse
-	(*ListUsersRequest)(nil),   // 5: user.ListUsersRequest
-	(*ListUsersResponse)(nil),  // 6: user.ListUsersResponse
-	(*LoginRequest)(nil),       // 7: user.LoginRequest
-	(*LoginResponse)(nil),      // 8: user.LoginResponse
-	(*FindByEmailRequest)(nil), // 9: user.FindByEmailRequest
-	(*UserResponse)(nil),       // 10: user.UserResponse
+	(*User)(nil),                        // 0: userservice.User
+	(*CreateUserRequest)(nil),           // 1: userservice.CreateUserRequest
+	(*CreateUserResponse)(nil),          // 2: userservice.CreateUserResponse
+	(*GetUserByIDRequest)(nil),          // 3: userservice.GetUserByIDRequest
+	(*GetUserByIDResponse)(nil),         // 4: userservice.GetUserByIDResponse
+	(*ListUsersRequest)(nil),            // 5: userservice.ListUsersRequest
+	(*ListUsersResponse)(nil),           // 6: userservice.ListUsersResponse
+	(*UpdateUserRequest)(nil),           // 7: userservice.UpdateUserRequest
+	(*UpdateUserResponse)(nil),          // 8: userservice.UpdateUserResponse
+	(*DeleteUserRequest)(nil),           // 9: userservice.DeleteUserRequest
+	(*FindUsersWithFilterRequest)(nil),  // 10: userservice.FindUsersWithFilterRequest
+	(*FindUsersWithFilterResponse)(nil), // 11: userservice.FindUsersWithFilterResponse
+	(*CreateUsersRequest)(nil),          // 12: userservice.CreateUsersRequest
+	(*CreateUsersResponse)(nil),         // 13: userservice.CreateUsersResponse
+	(*UpdateUserItem)(nil),              // 14: userservice.UpdateUserItem
+	(*UpdateUsersRequest)(nil),          // 15: userservice.UpdateUsersRequest
+	(*UpdateUsersResponse)(nil),         // 16: userservice.UpdateUsersResponse
+	(*DeleteUsersRequest)(nil),          // 17: userservice.DeleteUsersRequest
+	(*DeleteUsersResponse)(nil),         // 18: userservice.DeleteUsersResponse
+	(*LoginRequest)(nil),                // 19: userservice.LoginRequest
+	(*LoginResponse)(nil),               // 20: userservice.LoginResponse
+	(*RefreshRequest)(nil),              // 21: userservice.RefreshRequest
+	(*RefreshResponse)(nil),             // 22: userservice.RefreshResponse
+	(*timestamppb.Timestamp)(nil),       // 23: google.protobuf.Timestamp
+	(*core.FilterOptions)(nil),          // 24: core.FilterOptions
+	(*core.PaginationInfo)(nil),         // 25: core.PaginationInfo
+	(*wrapperspb.StringValue)(nil),      // 26: google.protobuf.StringValue
+	(*wrapperspb.BoolValue)(nil),        // 27: google.protobuf.BoolValue
+	(*wrapperspb.Int32Value)(nil),       // 28: google.protobuf.Int32Value
+	(*emptypb.Empty)(nil),               // 29: google.protobuf.Empty
 }
 var file_proto_user_service_user_proto_depIdxs = []int32{
-	10, // 0: user.ListUsersResponse.users:type_name -> user.UserResponse
-	10, // 1: user.LoginResponse.user:type_name -> user.UserResponse
-	0,  // 2: user.UserService.CreateUser:input_type -> user.CreateUserRequest
-	1,  // 3: user.UserService.GetUser:input_type -> user.GetUserRequest
-	2,  // 4: user.UserService.UpdateUser:input_type -> user.UpdateUserRequest
-	3,  // 5: user.UserService.DeleteUser:input_type -> user.DeleteUserRequest
-	5,  // 6: user.UserService.ListUsers:input_type -> user.ListUsersRequest
-	7,  // 7: user.UserService.Login:input_type -> user.LoginRequest
-	9,  // 8: user.UserService.FindByEmail:input_type -> user.FindByEmailRequest
-	10, // 9: user.UserService.CreateUser:output_type -> user.UserResponse
-	10, // 10: user.UserService.GetUser:output_type -> user.UserResponse
-	10, // 11: user.UserService.UpdateUser:output_type -> user.UserResponse
-	4,  // 12: user.UserService.DeleteUser:output_type -> user.DeleteUserResponse
-	6,  // 13: user.UserService.ListUsers:output_type -> user.ListUsersResponse
-	8,  // 14: user.UserService.Login:output_type -> user.LoginResponse
-	10, // 15: user.UserService.FindByEmail:output_type -> user.UserResponse
-	9,  // [9:16] is the sub-list for method output_type
-	2,  // [2:9] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	23, // 0: userservice.User.created_at:type_name -> google.protobuf.Timestamp
+	23, // 1: userservice.User.updated_at:type_name -> google.protobuf.Timestamp
+	23, // 2: userservice.User.deleted_at:type_name -> google.protobuf.Timestamp
+	23, // 3: userservice.User.last_login_at:type_name -> google.protobuf.Timestamp
+	0,  // 4: userservice.CreateUserResponse.user:type_name -> userservice.User
+	0,  // 5: userservice.GetUserByIDResponse.user:type_name -> userservice.User
+	24, // 6: userservice.ListUsersRequest.options:type_name -> core.FilterOptions
+	0,  // 7: userservice.ListUsersResponse.users:type_name -> userservice.User
+	25, // 8: userservice.ListUsersResponse.pagination_info:type_name -> core.PaginationInfo
+	26, // 9: userservice.UpdateUserRequest.username:type_name -> google.protobuf.StringValue
+	26, // 10: userservice.UpdateUserRequest.email:type_name -> google.protobuf.StringValue
+	26, // 11: userservice.UpdateUserRequest.first_name:type_name -> google.protobuf.StringValue
+	26, // 12: userservice.UpdateUserRequest.last_name:type_name -> google.protobuf.StringValue
+	26, // 13: userservice.UpdateUserRequest.role:type_name -> google.protobuf.StringValue
+	27, // 14: userservice.UpdateUserRequest.is_active:type_name -> google.protobuf.BoolValue
+	26, // 15: userservice.UpdateUserRequest.phone:type_name -> google.protobuf.StringValue
+	26, // 16: userservice.UpdateUserRequest.address:type_name -> google.protobuf.StringValue
+	28, // 17: userservice.UpdateUserRequest.age:type_name -> google.protobuf.Int32Value
+	26, // 18: userservice.UpdateUserRequest.profile_pic:type_name -> google.protobuf.StringValue
+	0,  // 19: userservice.UpdateUserResponse.user:type_name -> userservice.User
+	24, // 20: userservice.FindUsersWithFilterRequest.options:type_name -> core.FilterOptions
+	0,  // 21: userservice.FindUsersWithFilterResponse.users:type_name -> userservice.User
+	25, // 22: userservice.FindUsersWithFilterResponse.pagination_info:type_name -> core.PaginationInfo
+	1,  // 23: userservice.CreateUsersRequest.users:type_name -> userservice.CreateUserRequest
+	0,  // 24: userservice.CreateUsersResponse.users:type_name -> userservice.User
+	26, // 25: userservice.UpdateUserItem.username:type_name -> google.protobuf.StringValue
+	26, // 26: userservice.UpdateUserItem.email:type_name -> google.protobuf.StringValue
+	26, // 27: userservice.UpdateUserItem.first_name:type_name -> google.protobuf.StringValue
+	26, // 28: userservice.UpdateUserItem.last_name:type_name -> google.protobuf.StringValue
+	26, // 29: userservice.UpdateUserItem.role:type_name -> google.protobuf.StringValue
+	27, // 30: userservice.UpdateUserItem.is_active:type_name -> google.protobuf.BoolValue
+	26, // 31: userservice.UpdateUserItem.phone:type_name -> google.protobuf.StringValue
+	26, // 32: userservice.UpdateUserItem.address:type_name -> google.protobuf.StringValue
+	28, // 33: userservice.UpdateUserItem.age:type_name -> google.protobuf.Int32Value
+	26, // 34: userservice.UpdateUserItem.profile_pic:type_name -> google.protobuf.StringValue
+	14, // 35: userservice.UpdateUsersRequest.items:type_name -> userservice.UpdateUserItem
+	0,  // 36: userservice.LoginResponse.user:type_name -> userservice.User
+	1,  // 37: userservice.UserService.Create:input_type -> userservice.CreateUserRequest
+	3,  // 38: userservice.UserService.GetByID:input_type -> userservice.GetUserByIDRequest
+	5,  // 39: userservice.UserService.List:input_type -> userservice.ListUsersRequest
+	7,  // 40: userservice.UserService.Update:input_type -> userservice.UpdateUserRequest
+	9,  // 41: userservice.UserService.Delete:input_type -> userservice.DeleteUserRequest
+	10, // 42: userservice.UserService.FindWithFilter:input_type -> userservice.FindUsersWithFilterRequest
+	12, // 43: userservice.UserService.CreateMany:input_type -> userservice.CreateUsersRequest
+	15, // 44: userservice.UserService.UpdateMany:input_type -> userservice.UpdateUsersRequest
+	17, // 45: userservice.UserService.DeleteMany:input_type -> userservice.DeleteUsersRequest
+	19, // 46: userservice.UserService.Login:input_type -> userservice.LoginRequest
+	21, // 47: userservice.UserService.Refresh:input_type -> userservice.RefreshRequest
+	2,  // 48: userservice.UserService.Create:output_type -> userservice.CreateUserResponse
+	4,  // 49: userservice.UserService.GetByID:output_type -> userservice.GetUserByIDResponse
+	6,  // 50: userservice.UserService.List:output_type -> userservice.ListUsersResponse
+	8,  // 51: userservice.UserService.Update:output_type -> userservice.UpdateUserResponse
+	29, // 52: userservice.UserService.Delete:output_type -> google.protobuf.Empty
+	11, // 53: userservice.UserService.FindWithFilter:output_type -> userservice.FindUsersWithFilterResponse
+	13, // 54: userservice.UserService.CreateMany:output_type -> userservice.CreateUsersResponse
+	29, // 55: userservice.UserService.UpdateMany:output_type -> google.protobuf.Empty
+	29, // 56: userservice.UserService.DeleteMany:output_type -> google.protobuf.Empty
+	20, // 57: userservice.UserService.Login:output_type -> userservice.LoginResponse
+	22, // 58: userservice.UserService.Refresh:output_type -> userservice.RefreshResponse
+	48, // [48:59] is the sub-list for method output_type
+	37, // [37:48] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_proto_user_service_user_proto_init() }
@@ -1031,15 +1833,17 @@ func file_proto_user_service_user_proto_init() {
 	if File_proto_user_service_user_proto != nil {
 		return
 	}
-	file_proto_user_service_user_proto_msgTypes[2].OneofWrappers = []any{}
-	file_proto_user_service_user_proto_msgTypes[10].OneofWrappers = []any{}
+	file_proto_user_service_user_proto_msgTypes[0].OneofWrappers = []any{}
+	file_proto_user_service_user_proto_msgTypes[1].OneofWrappers = []any{}
+	file_proto_user_service_user_proto_msgTypes[7].OneofWrappers = []any{}
+	file_proto_user_service_user_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_user_service_user_proto_rawDesc), len(file_proto_user_service_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

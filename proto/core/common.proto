@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package core;
+
+option go_package = "golang-microservices-boilerplate/proto/core";
+
+import "google/protobuf/struct.proto"; // Needed for google.protobuf.Value
+// Add import for OpenAPI annotations
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+// Add OpenAPI definition options
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Core Common Definitions";
+    version: "1.0";
+    description: "Commonly used Protobuf messages for filtering, pagination, etc.";
+  };
+  schemes: [HTTP, HTTPS];
+  consumes: ["application/json"];
+  produces: ["application/json"];
+};
+
+// Represents common filtering, pagination, and sorting options.
+// Based on pkg/core/types/common.go FilterOptions struct.
+message FilterOptions {
+  // Maximum number of items to return per page.
+  optional int32 limit = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Maximum number of items to return per page.";
+      default: "50"; // JSON number example
+      example: "50"; // Example set to default
+    }
+  ];
+  // Number of items to skip before starting to collect the result set.
+  optional int32 offset = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Number of items to skip before starting to collect the result set (for pagination).";
+      default: "0"; // JSON number example
+      example: "0"; // Example set to default
+    }
+  ];
+  // Field name to sort the results by.
+  optional string sort_by = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Field name to sort the results by (e.g., 'created_at', 'name').";
+      default: "\"created_at\""; // Default JSON string
+      example: "\"created_at\""; // Example set to default
+    }
+  ];
+  // Whether to sort in descending order. Defaults to false (ascending).
+  optional bool sort_desc = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set to true to sort in descending order.";
+      default: "true"; // Default JSON boolean
+      example: "true"; // Example set to default
+    }
+  ];
+  // Key-value pairs for specific field filtering.
+  // Uses google.protobuf.Value to allow various types (string, number, bool, null).
+  map<string, google.protobuf.Value> filters = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Key-value pairs for specific field filtering. Values should correspond to google.protobuf.Value structure (e.g., {\"email\": \"user@gmail.com\"}).";
+      // Example for map requires a specific JSON structure string representing map<string, google.protobuf.Value>
+      example: "{\"email\": \"user@gmail.com\"}"; // Updated example
+    }
+  ];
+  // Whether to include soft-deleted records in the results.
+  optional bool include_deleted = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set to true to include soft-deleted records in the results.";
+      default: "false"; // Default JSON boolean
+      example: "false"; // Example set to default
+    }
+  ];
+}
+
+// Represents common pagination metadata included in list responses.
+// Based on pkg/core/types/common.go PaginationResult struct (metadata fields only).
+// Specific list responses should include this alongside their repeated items field.
+message PaginationInfo {
+  // Total number of items matching the query criteria across all pages.
+  int64 total_items = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Total number of items matching the query criteria across all pages.";
+      example: "1234"; // JSON number example
+    }
+  ];
+  // The limit (page size) used for the current response.
+  int32 limit = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The limit (page size) used for the current response.";
+      example: "50"; // JSON number example
+    }
+  ];
+  // The offset (number of items skipped) used for the current response.
+  int32 offset = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The offset (number of items skipped) used for the current response.";
+      example: "0"; // JSON number example
+    }
+  ];
+} 

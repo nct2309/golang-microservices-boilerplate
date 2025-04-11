@@ -17,7 +17,7 @@ WORKDIR /root/
 
 COPY --from=builder /app/api-gateway .
 COPY --from=builder /app/services/api-gateway/.env .
-COPY --from=builder /app/services/api-gateway/swagger ./swagger
+COPY --from=builder /app/swagger ./swagger
 COPY --from=builder /app/proto ./proto
 
 ENV $(cat .env | xargs)

@@ -1,552 +1,720 @@
 syntax = "proto3";
 
-package user;
+package userservice;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto"; // For Value in filters
+import "google/protobuf/wrappers.proto"; // For optional fields in updates
+import "proto/core/common.proto"; // Import common definitions
+// Add imports for annotations
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "golang-microservices-boilerplate/proto/user-service";
 
-import "protoc-gen-openapiv2/options/annotations.proto";
-import "google/api/annotations.proto";
-// import "google/protobuf/empty.proto"; // Removed import for Empty
-
-// Define overall Swagger info
+// Add OpenAPI definition options for the User Service
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
     title: "User Service API";
     version: "1.0";
-    description: "API for user management operations";
-    contact: {
-      name: "User Service Team";
-      email: "support@example.com";
+    description: "API for managing users and authentication.";
+  };
+  schemes: [HTTP, HTTPS];
+  consumes: ["application/json"];
+  produces: ["application/json"];
+  // Add security definition (e.g., for JWT Bearer token)
+  security_definitions: {
+    security: {
+      key: "BearerAuth";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+        description: "JWT Bearer token (e.g., 'Bearer ey...')";
+      }
     }
   };
-  // Optional: Add schemes, consumes, produces if needed
-  schemes: HTTP; // Or HTTPS, or both [HTTP, HTTPS]
-  schemes: HTTPS;
-  consumes: "application/json";
-  produces: "application/json";
+  // Apply the security globally, can be overridden per-method if needed
+  security: {
+    security_requirement: {
+      key: "BearerAuth";
+      value: {}; // Empty value means scopes aren't used here
+    }
+  }
 };
 
-service UserService {
-  // Create a new user
-  rpc CreateUser(CreateUserRequest) returns (UserResponse) {
-    option (google.api.http) = {
-      post: "/api/v1/users"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Creates a new user account. Requires email, password, first name, last name, and role.";
-      summary: "Create a new user";
-      tags: "Users"; // Group operations under 'Users' tag in Swagger UI
-      // Example of adding response description
-      responses: {
-        key: "200"; // HTTP Status Code
-        value: {
-          description: "User created successfully";
-          schema: {
-            json_schema: { // Reference the expected response message
-              ref: "#/definitions/userUserResponse";
-            }
-          }
-        }
-      }
-      // Add other responses like 400, 500 etc. if needed
-    };
-  }
-
-  // Get a user by ID
-  rpc GetUser(GetUserRequest) returns (UserResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/users/{id}"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Retrieves a user by their unique ID.";
-      summary: "Get a user by ID";
-      tags: "Users";
-      responses: {
-        key: "200";
-        value: {
-          description: "User details retrieved successfully";
-          schema: { json_schema: { ref: "#/definitions/userUserResponse"; } }
-        }
-      }
-      // Add 404 response example
-      responses: {
-        key: "404";
-        value: { description: "User not found"; }
-      }
-    };
-  }
-
-  // Update a user
-  rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {
-    option (google.api.http) = {
-      put: "/api/v1/users/{id}"
-      body: "*" // Specify which fields go in the body (use '*' for all non-path params)
-      // Example: Use patch if only updating specific fields:
-      // patch: "/api/v1/users/{id}"
-      // body: "*" // Or specify fields: body: "user_update_data" if nested
-    };
-     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Updates an existing user's details. Only provided fields are updated.";
-      summary: "Update a user";
-      tags: "Users";
-       responses: {
-        key: "200";
-        value: {
-          description: "User updated successfully";
-          schema: { json_schema: { ref: "#/definitions/userUserResponse"; } }
-        }
-      }
-    };
-  }
-
-  // Delete a user
-  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
-    option (google.api.http) = {
-      delete: "/api/v1/users/{id}"
-    };
-     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Deletes a user by their unique ID. This might be a soft delete depending on implementation.";
-      summary: "Delete a user";
-      tags: "Users";
-      responses: {
-        key: "200"; // Often 200 or 204 (No Content) for successful DELETE
-        value: {
-          description: "User deleted successfully";
-           schema: { json_schema: { ref: "#/definitions/userDeleteUserResponse"; } }
-        }
-      }
-    };
-  }
-
-  // List all users with pagination
-  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/users"
-      // Query parameters (offset, limit) are automatically mapped from the request message
-    };
-     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Retrieves a list of users with pagination support using offset and limit.";
-      summary: "List users";
-      tags: "Users";
-       responses: {
-        key: "200";
-        value: {
-          description: "List of users retrieved successfully";
-           schema: { json_schema: { ref: "#/definitions/userListUsersResponse"; } }
-        }
-      }
-    };
-  }
-
-  // Login user
-  rpc Login(LoginRequest) returns (LoginResponse) {
-    option (google.api.http) = {
-      post: "/api/v1/login"
-      body: "*"
-    };
-     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Authenticates a user and returns a JWT token upon successful login.";
-      summary: "User login";
-      tags: "Authentication"; // Use a different tag for auth-related endpoints
-      responses: {
-        key: "200";
-        value: {
-          description: "Login successful, token returned";
-          schema: { json_schema: { ref: "#/definitions/userLoginResponse"; } }
-        }
-      }
-      // Add 401 Unauthorized response
-      responses: {
-        key: "401";
-        value: { description: "Invalid credentials"; }
-      }
-    };
-  }
-
-  // Find user by email
-  rpc FindByEmail(FindByEmailRequest) returns (UserResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/users/email/{email}"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Finds and retrieves a user by their email address.";
-      summary: "Find user by email";
-      tags: "Users";
-       responses: {
-        key: "200";
-        value: {
-          description: "User found successfully";
-          schema: { json_schema: { ref: "#/definitions/userUserResponse"; } }
-        }
-      }
-      responses: {
-        key: "404";
-        value: { description: "User with specified email not found"; }
-      }
-    };
-  }
-}
-
-// --- Message Definitions with Corrected Examples ---
-
-// Request to create a new user
-message CreateUserRequest {
-  // Add message-level description
+// Represents the user entity
+message User {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      title: "Create User Payload";
-      description: "Data required to create a new user account.";
-      required: ["email", "password", "first_name", "last_name"] // Mark fields as required in OpenAPI
+      title: "User";
+      description: "Represents a user in the system.";
+      required: ["id", "created_at", "updated_at", "username", "email", "first_name", "last_name", "role", "is_active"];
     }
   };
 
-  string email = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's unique email address. Used for login.";
-    // Example must be a valid JSON string representation
-    example: "\"john.doe@example.com\"";
-    // Default is just the plain string value for documentation
-    // default: "user@example.com"; // Only add default if it makes sense (maybe not for email)
-    format: "email"; // Add standard formats
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unique identifier for the user (UUID format).";
+    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\""; // JSON string example
   }];
-  string password = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's password (minimum 8 characters recommended).";
-    example: "\"SecureP@ss123\"";
-    // default: "password123"; // Avoid defaulting passwords
-    format: "password"; // Hints to UI to potentially mask input
-    min_length: 8;
+  google.protobuf.Timestamp created_at = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Timestamp when the user was created (RFC3339 UTC format).";
+    example: "\"2023-01-15T10:30:00Z\""; // JSON string example
   }];
-  string first_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  google.protobuf.Timestamp updated_at = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Timestamp when the user was last updated (RFC3339 UTC format).";
+    example: "\"2023-01-16T11:00:00Z\""; // JSON string example
+  }];
+  optional google.protobuf.Timestamp deleted_at = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Timestamp when the user was soft-deleted (RFC3339 UTC format). Null if not deleted.";
+    example: "\"2023-01-17T12:00:00Z\""; // JSON string example
+  }];
+  string username = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unique username for the user.";
+    example: "\"johndoe\""; // JSON string example
+  }];
+  string email = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unique email address for the user.";
+    example: "\"john.doe@example.com\""; // JSON string example
+  }];
+  // Password is not included in responses
+  string first_name = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "User's first name.";
-    example: "\"John\"";
-    // default: "John"; // Optional: only if a default name makes sense
+    example: "\"John\""; // JSON string example
   }];
-  string last_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string last_name = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "User's last name.";
-    example: "\"Doe\"";
-    // default: "Doe"; // Optional
+    example: "\"Doe\""; // JSON string example
   }];
-  string role = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's role within the system (e.g., user, admin).";
-    example: "\"user\"";
-    default: "user"; // Default role often makes sense
-    enum: ["\"manager\"", "\"admin\"", "\"officer\""]; // Specify allowed enum values as JSON strings
+  string role = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's role (e.g., 'admin', 'manager', 'officer').";
+    example: "\"officer\""; // JSON string example
   }];
-  // Optional fields don't need 'default', just 'example' is helpful
-  string phone = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's phone number, preferably in E.164 format (optional).";
-    example: "\"+14155552671\""; // E.164 example
-    pattern: "^\\+[1-9]\\d{1,14}$"; // Regex pattern for E.164
+  bool is_active = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Indicates if the user account is active.";
+    default: "false"; // JSON boolean value as string
+    example: "true"; // JSON boolean example
   }];
-  string address = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's full address (optional).";
-    example: "\"1600 Amphitheatre Parkway, Mountain View, CA 94043\"";
+  optional google.protobuf.Timestamp last_login_at = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Timestamp of the user's last login (RFC3339 UTC format). Null if never logged in.";
+    example: "\"2023-01-18T09:00:00Z\""; // JSON string example
   }];
-  int32 age = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string phone = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's phone number (optional).";
+    example: "\"+1234567890\""; // JSON string example
+  }];
+  string address = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's address (optional).";
+    example: "\"123 Main St, Anytown\""; // JSON string example
+  }];
+  int32 age = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "User's age (optional).";
-    // Example for numbers is just the number as a string
-    example: "30";
-    format: "int32";
-    minimum: 0; // Add constraints
+    example: "30"; // JSON number example
   }];
-  string profile_pic = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "URL to user's profile picture (optional).";
-    example: "\"https://example.com/profiles/johndoe.jpg\"";
-    format: "url";
+  string profile_pic = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "URL to the user's profile picture (optional).";
+    example: "\"https://example.com/profiles/johndoe.jpg\""; // JSON string example
   }];
 }
 
-// Request to get a user by ID
-message GetUserRequest {
-   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: { required: ["id"]; } // ID is required for this operation
-   };
-  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "The unique identifier (UUID or similar) of the user to retrieve.";
-    // Example should reflect the actual ID format (e.g., UUID)
-    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"";
-    format: "uuid"; // Or appropriate format
-    // Default doesn't usually make sense for a specific resource ID lookup
+// Request for creating a single user
+message CreateUserRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Create User Request";
+      description: "Data required to create a new user.";
+      required: ["username", "email", "password", "first_name", "last_name"]; // Role defaults server-side if omitted
+    }
+  };
+  // Fields corresponding to schema.UserCreateDTO
+  string username = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Desired unique username.";
+    example: "\"janedoe\""; // JSON string example
   }];
-}
-
-// Request to update a user
-message UpdateUserRequest {
-  // ID comes from the path, other fields are optional in the body
-  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "The unique identifier of the user to update (passed in URL path).";
-    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\""; // Example for clarity
-    format: "uuid";
-    // read_only: true; // Mark as read-only in the request body schema if needed (though path param takes precedence)
+  string email = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Desired unique email address.";
+    example: "\"jane.doe@example.com\""; // JSON string example
   }];
-  // Use 'optional' keyword for fields that might not be sent
-  optional string first_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated first name (optional). If omitted, value is unchanged.";
-    example: "\"Johnny\"";
-  }];
-  optional string last_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated last name (optional). If omitted, value is unchanged.";
-    example: "\"Doe\"";
-  }];
-  optional string password = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated password (optional, min 8 characters). If omitted, password is unchanged.";
-    example: "\"NewS3cureP@ss!\"";
+  string password = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's desired password (min 8 characters).";
     format: "password";
-    min_length: 8;
+    example: "\"StrongP@ssw0rd!\""; // JSON string example
   }];
-  // Can add other updatable fields here (phone, address, etc.) marked as optional
-   optional string phone = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated phone number (optional).";
-    example: "\"+14155552672\"";
-    pattern: "^\\+[1-9]\\d{1,14}$";
+  string first_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's first name.";
+    example: "\"Jane\""; // JSON string example
   }];
-   optional string address = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated address (optional).";
-    example: "\"1 Loop Drive, Cupertino, CA 95014\"";
+  string last_name = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's last name.";
+    example: "\"Doe\""; // JSON string example
   }];
-   optional int32 age = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated age (optional).";
-    example: "31";
-    format: "int32";
-    minimum: 0;
+  string role = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's role (e.g., 'admin', 'manager', 'officer'). Defaults to 'officer' if omitted or invalid.";
+    default: "\"officer\""; // Default JSON string
+    example: "\"officer\""; // Example set to default
   }];
-   optional string profile_pic = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated URL to profile picture (optional).";
-    example: "\"https://example.com/profiles/johndoe_v2.jpg\"";
-    format: "url";
+  optional bool is_active = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Set initial active status. Defaults to false.";
+    default: "false"; // Default JSON boolean
+    example: "false"; // Example set to default
   }];
-    optional string role = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Updated user role (optional).";
-    example: "\"admin\"";
-    enum: ["\"manager\"", "\"admin\"", "\"officer\""];
+  optional string phone = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's phone number (optional).";
+    example: "\"+1987654321\""; // JSON string example
+  }];
+  optional string address = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's address (optional).";
+    example: "\"456 Oak Ave, Sometown\""; // JSON string example
+  }];
+  optional int32 age = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "User's age (optional).";
+    example: "28"; // JSON number example
+  }];
+  optional string profile_pic = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "URL to the user's profile picture (optional).";
+    example: "\"https://example.com/profiles/janedoe.jpg\""; // JSON string example
   }];
 }
 
-// Request to delete a user
-message DeleteUserRequest {
-   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: { required: ["id"]; }
-   };
+// Response for creating a single user
+message CreateUserResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Create User Response";
+      description: "Contains the newly created user details.";
+    }
+  };
+  User user = 1; // Example defined in User message
+}
+
+// Request for getting a user by ID
+message GetUserByIDRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Get User By ID Request";
+      description: "Specifies the ID of the user to retrieve.";
+    }
+  };
   string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "The unique identifier of the user to delete.";
-    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"";
-    format: "uuid";
-    // No default for specific ID
+    description: "The UUID of the user to retrieve.";
+    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\""; // JSON string example
   }];
 }
 
-// Response for user deletion
-message DeleteUserResponse {
-   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+// Response for getting a user by ID
+message GetUserByIDResponse {
+ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-        title: "Deletion Confirmation";
-        description: "Indicates whether the deletion was successful.";
+      title: "Get User By ID Response";
+      description: "Contains the details of the requested user.";
     }
-   };
-  bool success = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-     description: "True if the user was deleted successfully.";
-     // Example for booleans is true/false (no quotes needed in the example string itself)
-     example: "true";
-  }];
+  };
+  User user = 1; // Example defined in User message
 }
 
-// Request to list users with pagination
+// Request for listing users with filtering and pagination
 message ListUsersRequest {
-  // Using offset/limit is common for pagination
-  int32 offset = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Number of items to skip before starting to collect the result set.";
-    example: "0"; // JSON number
-    default: "0";  // Documented default is 0
-    format: "int32";
-    minimum: 0;
-  }];
-  int32 limit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Maximum number of items to return.";
-    example: "25"; // JSON number
-    default: "10"; // Documented default is 10
-    format: "int32";
-    minimum: 1;
-    maximum: 100; // Set a reasonable max limit
-  }];
-  // Could add optional filtering parameters here, e.g., by role
-  // optional string role_filter = 3 [(...)]
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "List Users Request";
+      description: "Options for filtering, sorting, and paginating the list of users.";
+    }
+  };
+  // FilterOptions fields will be mapped to query parameters by the gateway
+  // Examples and defaults for these are defined in proto/core/common.proto
+  core.FilterOptions options = 1;
 }
 
-// Response containing a list of users
+// Response for listing users
 message ListUsersResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "List Users Response";
+      description: "A paginated list of users matching the criteria.";
+    }
+  };
+  repeated User users = 1; // Example defined in User message
+  // PaginationInfo fields examples/defaults are defined in proto/core/common.proto
+  core.PaginationInfo pagination_info = 2;
+}
+
+// Request for updating a user
+message UpdateUserRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Update User Request";
+      description: "Data for updating an existing user. Include only the fields to be changed.";
+      required: ["id"];
+    }
+  };
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The UUID of the user to update.";
+    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\""; // JSON string example
+  }];
+  // Fields corresponding to schema.UserUpdateDTO (using wrappers for optionality)
+  optional google.protobuf.StringValue username = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New username.";
+    example: "\"johndoeupdated\""; // JSON string example for wrapper value
+  }];
+  optional google.protobuf.StringValue email = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New email address.";
+    example: "\"john.doe.updated@example.com\""; // JSON string example for wrapper value
+  }];
+  // Password updates might need a separate, dedicated RPC for security
+  optional google.protobuf.StringValue first_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New first name.";
+    example: "\"Jonathan\""; // JSON string example for wrapper value
+  }];
+  optional google.protobuf.StringValue last_name = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New last name.";
+    example: "\"Doe\""; // JSON string example for wrapper value
+  }];
+  optional google.protobuf.StringValue role = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New role.";
+    example: "\"manager\""; // JSON string example for wrapper value
+  }];
+  optional google.protobuf.BoolValue is_active = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Update active status.";
+    example: "false"; // JSON boolean example for wrapper value
+  }];
+  optional google.protobuf.StringValue phone = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New phone number.";
+    example: "\"+1122334455\""; // JSON string example for wrapper value
+  }];
+  optional google.protobuf.StringValue address = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New address.";
+    example: "\"789 Pine Ln, Otherville\""; // JSON string example for wrapper value
+  }];
+  optional google.protobuf.Int32Value age = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New age.";
+    example: "31"; // JSON number example for wrapper value
+  }];
+  optional google.protobuf.StringValue profile_pic = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New profile picture URL.";
+    example: "\"https://example.com/profiles/johndoe_v2.jpg\""; // JSON string example for wrapper value
+  }];
+}
+
+// Response for updating a user
+message UpdateUserResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Update User Response";
+      description: "Contains the updated user details.";
+    }
+  };
+  User user = 1; // Example defined in User message
+}
+
+// Request for deleting a user (soft or hard delete)
+message DeleteUserRequest {
+ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Delete User Request";
+      description: "Specifies the ID of the user to delete and whether it should be a permanent (hard) delete.";
+    }
+  };
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The UUID of the user to delete.";
+    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\""; // Corrected escaping
+  }];
+  // Add field to distinguish between soft and hard delete
+  bool hard_delete = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If true, performs a permanent (hard) delete. If false or omitted, performs a soft delete.";
+    default: "false";
+    example: "false";
+  }];
+}
+
+// Response for deleting a user (can be empty)
+// type: google.protobuf.Empty
+
+// Request for finding users with specific filters
+message FindUsersWithFilterRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Find Users With Filter Request";
+      description: "Advanced search criteria for users, using filters, pagination, and sorting defined within FilterOptions.";
+    }
+  };
+  // The filter map is now part of core.FilterOptions
+
+  core.FilterOptions options = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filtering, pagination and sorting options (see core.FilterOptions for defaults/examples).";
+  }];
+}
+
+// Response for finding users with specific filters
+message FindUsersWithFilterResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Find Users With Filter Response";
+      description: "A paginated list of users matching the advanced search criteria.";
+    }
+  };
+  repeated User users = 1; // Example defined in User message
+  core.PaginationInfo pagination_info = 2; // Example defined in core.PaginationInfo message
+}
+
+// Request for creating multiple users
+message CreateUsersRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Create Users Request (Bulk)";
+      description: "A list of user creation requests for bulk insertion.";
+    }
+  };
+  repeated CreateUserRequest users = 1;
+}
+
+// Response for creating multiple users
+message CreateUsersResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Create Users Response (Bulk)";
+      description: "A list containing the details of the newly created users.";
+    }
+  };
+  repeated User users = 1; // Example defined in User message
+}
+
+// Defines a single item for the bulk update request
+message UpdateUserItem {
    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-        title: "Paginated User List";
-        description: "A list of users along with pagination details.";
+      title: "Update User Item";
+      description: "Specifies the ID and the fields to update for a single user in a bulk operation.";
+      required: ["id"];
     }
-   };
-  repeated UserResponse users = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "The list of user objects found for the current page.";
+  };
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The UUID of the user to update.";
+    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\""; // Corrected escaping
   }];
-  int64 total = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Total number of users matching the criteria (across all pages).";
-    example: "153";
-    format: "int64";
+  // Reuse optional fields from UpdateUserRequest (excluding id)
+  optional google.protobuf.StringValue username = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New username."; 
+    example: "\"updatedusername\"";
+  }]; // Corrected escaping
+  optional google.protobuf.StringValue email = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New email address."; 
+    example: "\"updated.email@example.com\"";
+  }]; // Corrected escaping
+  optional google.protobuf.StringValue first_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New first name."; 
+    example: "\"UpdatedFirstName\"";
+  }]; // Corrected escaping
+  optional google.protobuf.StringValue last_name = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New last name."; 
+    example: "\"UpdatedLastName\"";
+  }]; // Corrected escaping
+  optional google.protobuf.StringValue role = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New role."; 
+    example: "\"manager\"";
+  }]; // Corrected escaping
+  optional google.protobuf.BoolValue is_active = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Update active status."; 
+    example: "true";
+  }]; // Corrected escaping (bool doesn't need quotes)
+  optional google.protobuf.StringValue phone = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New phone number."; 
+    example: "\"+1555000111\"";
+  }]; // Corrected escaping
+  optional google.protobuf.StringValue address = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New address."; 
+    example: "\"999 Updated St\"";
+  }]; // Corrected escaping
+  optional google.protobuf.Int32Value age = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New age."; 
+    example: "40";
+  }]; // Corrected escaping (number doesn't need quotes)
+  optional google.protobuf.StringValue profile_pic = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New profile picture URL."; 
+    example: "\"https://example.com/profiles/updated.jpg\"";
+  }]; // Corrected escaping
+}
+
+// Request for updating multiple users based on a list of items
+message UpdateUsersRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Update Users Request (Bulk)";
+      description: "A list of users to update, each specifying an ID and the data to change.";
+    }
+  };
+  // Replace filter and individual fields with a list of items
+  repeated UpdateUserItem items = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "List of user updates. Each item must contain an ID and the fields to modify.";
   }];
-  int32 limit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "The limit value used for this request.";
-    example: "25";
-    format: "int32";
+}
+
+// Response for updating multiple users (now empty)
+message UpdateUsersResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Update Users Response (Bulk)";
+      description: "Indicates success of the bulk update operation (empty response).";
+    }
+  };
+  // Response is now empty on success, error indicates failure.
+}
+
+// Request for deleting multiple users by IDs (soft or hard delete)
+message DeleteUsersRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Delete Users Request (Bulk)";
+      description: "A list of user IDs to delete and whether it should be a permanent (hard) delete.";
+      required: ["ids"];
+    }
+  };
+  // Remove filter, add IDs
+  repeated string ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "List of user UUIDs to delete.";
+    example: "[\"a1b2c3d4-e5f6-7890-1234-567890abcdef\", \"b2c3d4e5-f6a7-8901-2345-67890abcdef0\"]"; // Corrected escaping for JSON array string
   }];
-  int32 offset = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "The offset value used for this request.";
-    example: "50";
-    format: "int32";
+  // Add hard_delete flag
+  bool hard_delete = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If true, performs a permanent (hard) delete. If false or omitted, performs a soft delete.";
+    default: "false";
+    example: "false";
   }];
-  // total_pages is often calculated, maybe not needed explicitly if total/limit/offset are present
-  // int32 total_pages = 5;
+}
+
+// Response for deleting multiple users (now empty)
+message DeleteUsersResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Delete Users Response (Bulk)";
+      description: "Indicates success of the bulk delete operation (empty response).";
+    }
+  };
+  // Response is now empty on success, error indicates failure.
 }
 
 // Request for user login
 message LoginRequest {
-   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-        title: "Login Credentials";
-        required: ["email", "password"];
-     }
-   };
+      title: "Login Request";
+      description: "Credentials required for user authentication.";
+      required: ["email", "password"];
+    }
+  };
   string email = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's email address for login.";
-    example: "\"jane.doe@example.com\"";
-    format: "email";
-    // No default for login email
+    description: "User's email address.";
+    example: "\"john.doe@example.com\""; // JSON string example
   }];
   string password = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's password for login.";
-    example: "\"CorrectP@ssw0rd\"";
+    description: "User's password.";
     format: "password";
-    // No default for login password
+    example: "\"password123\""; // JSON string example
   }];
 }
 
-// Response for successful login
+// Response for user login
 message LoginResponse {
-   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: { title: "Login Result"; }
-   };
-  string token = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "JWT authentication token to be used for subsequent authenticated requests.";
-    example: "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyNDI2MjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\""; // Example JWT
-    format: "jwt"; // Custom format hint
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Login Response";
+      description: "Contains user details and authentication tokens upon successful login.";
+    }
+  };
+  User user = 1; // Example defined in User message
+  string access_token = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "JWT access token for API authorization.";
+    example: "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\""; // More complete example
   }];
-  int64 expires_at = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Timestamp (Unix epoch seconds) when the token expires.";
-    example: "1678901234"; // Unix timestamp example
-    format: "int64";
+  string refresh_token = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "JWT refresh token to obtain new access tokens.";
+    example: "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicmVmcmVzaCI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.9dxFj_KbboLCHdO0XAGna4z0aT4p4yMEQQHuDmPrzy8\""; // More complete example
   }];
-  UserResponse user = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-     description: "Details of the logged-in user.";
-     // No need for example here, the ref to UserResponse schema is enough
-  }];
-}
-
-// Request to find user by email
-message FindByEmailRequest {
-   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: { required: ["email"]; }
-   };
-  string email = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "The email address of the user to search for.";
-    example: "\"find.me@example.com\"";
-    format: "email";
-    // No default for specific email lookup
+  int64 expires_at = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unix timestamp (seconds) when the access token expires.";
+    example: "1678886400"; // JSON number example
   }];
 }
 
-// Response containing user information (used by multiple RPCs)
-message UserResponse {
-   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: { title: "User Details"; }
-   };
-  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Unique identifier for the user.";
-    example: "\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"";
-    format: "uuid";
-    read_only: true; // Typically read-only in responses
+// Request for refreshing authentication tokens
+message RefreshRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Refresh Request";
+      description: "Requires a valid refresh token to obtain a new access token.";
+      required: ["refresh_token"];
+    }
+  };
+  string refresh_token = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The JWT refresh token.";
+    example: "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicmVmcmVzaCI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.9dxFj_KbboLCHdO0XAGna4z0aT4p4yMEQQHuDmPrzy8\""; // More complete example
   }];
-  string email = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's email address.";
-    example: "\"jane.doe@example.com\"";
-    format: "email";
-    read_only: true;
+}
+
+// Response for refreshing authentication tokens
+message RefreshResponse {
+ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Refresh Response";
+      description: "Contains a new access token and potentially the same refresh token.";
+    }
+  };
+  string access_token = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Newly issued JWT access token.";
+    example: "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\""; // More complete example
   }];
-  string first_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's first name.";
-    example: "\"Jane\"";
-    read_only: true;
+  string refresh_token = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The refresh token (often the same one is returned).";
+    example: "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicmVmcmVzaCI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.9dxFj_KbboLCHdO0XAGna4z0aT4p4yMEQQHuDmPrzy8\""; // More complete example
   }];
-  string last_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's last name.";
-    example: "\"Doe\"";
-    read_only: true;
+  int64 expires_at = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unix timestamp (seconds) when the new access token expires.";
+    example: "1678889400"; // JSON number example
   }];
-  string role = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's role in the system.";
-    example: "\"officer\"";
-    read_only: true;
-  }];
-  int64 created_at = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Timestamp (Unix epoch seconds) when the user account was created.";
-    example: "1678888000"; // Unix timestamp example
-    format: "int64"; // Or potentially "date-time" if using google.protobuf.Timestamp
-    read_only: true;
-  }];
-  int64 updated_at = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Timestamp (Unix epoch seconds) when the user account was last updated.";
-    example: "1678900000"; // Unix timestamp example
-    format: "int64";
-    read_only: true;
-  }];
-  // Use google.protobuf.Timestamp for nullable time fields if needed, and handle zero value for int64
-  optional int64 deleted_at = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Timestamp (Unix epoch seconds) when the user was soft-deleted. Omitted if not deleted.";
-    example: "1678901234"; // Example only if applicable
-    format: "int64";
-    read_only: true;
-  }];
-  // Adding username field example
-  string username = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Unique username for the account (optional, distinct from email).";
-    example: "\"janedoe99\"";
-    read_only: true;
-  }];
-  bool is_active = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Indicates whether the user account is currently active.";
-    example: "true"; // Boolean example
-    read_only: true;
-  }];
-  int64 last_login_at = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Timestamp (Unix epoch seconds) of the user's last login.";
-    example: "1678900500";
-    format: "int64";
-    read_only: true;
-  }];
-  // Added phone/address to response for completeness
-   string phone = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's phone number.";
-    example: "\"+14155552671\"";
-    read_only: true;
-  }];
-  string address = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's full address.";
-    example: "\"1600 Amphitheatre Parkway, Mountain View, CA 94043\"";
-     read_only: true;
-  }];
-   int32 age = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "User's age.";
-    example: "30";
-    format: "int32";
-    read_only: true;
-  }];
-   string profile_pic = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "URL to user's profile picture.";
-    example: "\"https://example.com/profiles/johndoe.jpg\"";
-    format: "url";
-    read_only: true;
-  }];
+}
+
+// The gRPC service definition for Users
+service UserService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    description: "Operations related to user management and authentication";
+  };
+
+  // Basic CRUD
+  rpc Create(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/users"; // Path includes the base path
+      body: "*";
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create User";
+      description: "Creates a new user account.";
+      tags: ["Users"];
+      // Override security for this endpoint if needed (e.g., allow public creation)
+      // security: [];
+    };
+  }
+  rpc GetByID(GetUserByIDRequest) returns (GetUserByIDResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{id}"; // Path includes the base path
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get User by ID";
+      description: "Retrieves details of a specific user by their ID.";
+      tags: ["Users"];
+    };
+  }
+  rpc List(ListUsersRequest) returns (ListUsersResponse) {
+     option (google.api.http) = {
+      get: "/api/v1/users"; // Path includes the base path
+      // FilterOptions fields are automatically mapped to query parameters
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Users";
+      description: "Retrieves a paginated list of users, with filtering and sorting options.";
+      tags: ["Users"];
+    };
+  }
+  rpc Update(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/users/{id}"; // Path includes the base path
+      body: "*";
+      // The 'id' field from the path will be mapped to the request message's 'id' field.
+      // The rest of the request fields come from the body.
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update User";
+      description: "Updates specific fields of an existing user.";
+      tags: ["Users"];
+    };
+  }
+  // Consolidated Delete RPC
+  rpc Delete(DeleteUserRequest) returns (google.protobuf.Empty) { // Soft or Hard delete
+    option (google.api.http) = {
+      delete: "/api/v1/users/{id}"; // Path includes the base path
+      // hard_delete will be a query parameter: ?hard_delete=true
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete User (Soft/Hard)";
+      description: "Deletes a user. Defaults to soft delete. Set 'hard_delete=true' query parameter for permanent deletion.";
+      tags: ["Users"];
+    };
+  }
+
+  // Find operation (Using POST for potentially complex filters)
+  rpc FindWithFilter(FindUsersWithFilterRequest) returns (FindUsersWithFilterResponse) {
+     option (google.api.http) = {
+      post: "/api/v1/users/search"; // Path includes the base path + /search
+      body: "*"; // The body now maps directly to the FindUsersWithFilterRequest (which contains FilterOptions)
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Find Users with Filter";
+      description: "Performs an advanced search for users using complex filters provided in the request body.";
+      tags: ["Users"];
+    };
+  }
+
+  // Bulk operations
+  rpc CreateMany(CreateUsersRequest) returns (CreateUsersResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/users/bulk/create"; // Path includes the base path + specific bulk path
+      body: "*";
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create Multiple Users (Bulk)";
+      description: "Creates multiple user accounts in a single request.";
+      tags: ["Users (Bulk)"];
+    };
+  }
+  // Refactored UpdateMany RPC
+  rpc UpdateMany(UpdateUsersRequest) returns (google.protobuf.Empty) { // Returns Empty on success
+     option (google.api.http) = {
+      patch: "/api/v1/users/bulk/update"; // Use PATCH for partial updates
+      body: "*"; // Body contains the list of UpdateUserItem
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update Multiple Users (Bulk)";
+      description: "Updates multiple users based on a list of IDs and corresponding update data.";
+      tags: ["Users (Bulk)"];
+    };
+  }
+  // Consolidated DeleteMany RPC
+  rpc DeleteMany(DeleteUsersRequest) returns (google.protobuf.Empty) { // Returns Empty on success
+     option (google.api.http) = {
+      post: "/api/v1/users/bulk/delete"; // Use POST for action with body
+      body: "*"; // Body contains IDs and hard_delete flag
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Multiple Users (Bulk, Soft/Hard)";
+      description: "Deletes multiple users by ID. Defaults to soft delete. Set 'hard_delete' field in the request body for permanent deletion.";
+      tags: ["Users (Bulk)"];
+    };
+  }
+
+  // Authentication
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"; // Path includes the base path + /login
+      body: "*";
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "User Login";
+      description: "Authenticates a user and returns access/refresh tokens.";
+      tags: ["Authentication"];
+      // Authentication endpoints should not require prior authentication
+      security: [];
+    };
+  }
+  rpc Refresh(RefreshRequest) returns (RefreshResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/refresh"; // Path includes the base path + /refresh
+      body: "*";
+    };
+     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Refresh Token";
+      description: "Obtains a new access token using a valid refresh token.";
+      tags: ["Authentication"];
+      // Refresh might require the refresh token itself, but not typically Bearer auth
+      security: [];
+    };
+  }
 }

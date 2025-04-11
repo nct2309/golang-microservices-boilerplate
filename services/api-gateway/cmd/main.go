@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"golang-microservices-boilerplate/pkg/core"
+	"golang-microservices-boilerplate/pkg/core/logger"
 	"golang-microservices-boilerplate/pkg/utils"
-	"golang-microservices-boilerplate/services/api-gateway/internal/application/gateway"
+	"golang-microservices-boilerplate/services/api-gateway/internal/gateway"
 	"golang-microservices-boilerplate/services/api-gateway/internal/infrastructure/adapter"
 	"golang-microservices-boilerplate/services/api-gateway/internal/infrastructure/k8s"
 )
@@ -22,7 +22,7 @@ func main() {
 	}
 
 	// Setup structured logger
-	logger, err := core.NewLoggerFromEnv()
+	logger, err := logger.NewLoggerFromEnv()
 	if err != nil {
 		// If we can't create a structured logger, fall back to standard logger
 		stdLogger := log.New(os.Stdout, "[API-GATEWAY] ", log.LstdFlags|log.Lshortfile)

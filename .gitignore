@@ -56,3 +56,6 @@ dist-ssr
 
 # Tilt build
 build/
+
+# configmap.yaml in k8s subdirectories
+configmap.yaml

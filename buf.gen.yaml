@@ -19,7 +19,7 @@ plugins:
 
   # Generate OpenAPI definitions
   - name: openapiv2
-    out: services/api-gateway/swagger
+    out: swagger
     opt:
       - logtostderr=true
       # - allow_merge=true

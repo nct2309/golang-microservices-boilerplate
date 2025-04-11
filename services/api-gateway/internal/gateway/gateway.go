@@ -1,0 +1,261 @@
+package gateway
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/grpclog"
+
+	"golang-microservices-boilerplate/pkg/core/logger"
+	"golang-microservices-boilerplate/pkg/middleware"
+	user_pb "golang-microservices-boilerplate/proto/user-service"
+	"golang-microservices-boilerplate/services/api-gateway/internal/domain"
+)
+
+// Gateway handles HTTP requests by translating them to gRPC calls using Fiber
+type Gateway struct {
+	ctx          context.Context
+	app          *fiber.App
+	gwMux        *runtime.ServeMux
+	logger       logger.Logger
+	stdLogger    *log.Logger // Standard logger adapter for compatibility
+	discovery    domain.ServiceDiscovery
+	serviceConns map[string]*grpc.ClientConn
+	opts         []grpc.DialOption
+	mu           sync.Mutex
+}
+
+// GatewayOption configures the Gateway
+type GatewayOption func(*Gateway)
+
+// WithLogger sets the structured logger for the gateway
+func WithLogger(l logger.Logger) GatewayOption {
+	return func(g *Gateway) {
+		g.logger = l
+		stdLogWriter := &stdLogAdapter{logger: l}
+		g.stdLogger = log.New(stdLogWriter, "", 0)
+	}
+}
+
+// stdLogAdapter adapts logger.Logger to io.Writer for standard logger
+type stdLogAdapter struct {
+	logger logger.Logger
+}
+
+// Write implements io.Writer for the standard logger adapter
+func (a *stdLogAdapter) Write(p []byte) (n int, err error) {
+	msg := strings.TrimSpace(string(p))
+	if msg == "" {
+		return len(p), nil
+	}
+	if strings.HasPrefix(msg, "ERROR") || strings.Contains(msg, "error") {
+		a.logger.Error(msg)
+	} else if strings.HasPrefix(msg, "WARN") || strings.Contains(msg, "warning") {
+		a.logger.Warn(msg)
+	} else if strings.HasPrefix(msg, "DEBUG") {
+		a.logger.Debug(msg)
+	} else {
+		a.logger.Info(msg)
+	}
+	return len(p), nil
+}
+
+// NewGateway creates a new Gateway using Fiber
+func NewGateway(
+	ctx context.Context,
+	discovery domain.ServiceDiscovery,
+	opts ...GatewayOption,
+) *Gateway {
+
+	// Create a temporary base logger first
+	tempBaseLogger, _ := logger.NewLogger(logger.DefaultLogConfig())
+	// Now create a named logger from the base instance
+	tempLogger := tempBaseLogger.Named("gateway-init")
+
+	g := &Gateway{
+		ctx: ctx,
+		// Fiber app initialized later after logger is finalized
+		gwMux: runtime.NewServeMux(
+			runtime.WithErrorHandler(defaultErrorHandler),
+			runtime.WithIncomingHeaderMatcher(headerMatcher),
+		),
+		discovery:    discovery,
+		serviceConns: make(map[string]*grpc.ClientConn),
+		opts:         []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
+		logger:       tempLogger, // Start with temp named logger
+		stdLogger:    log.New(&stdLogAdapter{logger: tempLogger}, "", 0),
+		mu:           sync.Mutex{},
+	}
+
+	// Apply options, potentially overriding the logger
+	for _, opt := range opts {
+		opt(g)
+	}
+
+	// --- Configure components that depend on the FINAL logger ---
+
+	// Configure Fiber App with the final logger in the error handler
+	g.app = fiber.New(fiber.Config{
+		ErrorHandler: g.fiberErrorHandler, // Assign the method reference
+	})
+
+	// Configure gRPC global logger
+	grpcLoggerWriter := &stdLogAdapter{logger: g.logger.Named("grpc")}
+	grpcStdLogger := log.New(grpcLoggerWriter, "", 0)
+	grpclog.SetLoggerV2(grpclog.NewLoggerV2(grpcStdLogger.Writer(), grpcStdLogger.Writer(), grpcStdLogger.Writer()))
+
+	// Add Fiber middleware
+	g.app.Use(cors.New())                    // CORS
+	g.app.Use(middleware.LoggerMiddleware()) // Call middleware without logger arg
+
+	// Mount the gRPC-Gateway mux
+	g.app.Use("/api", adaptor.HTTPHandler(g.gwMux))
+
+	return g
+}
+
+// fiberErrorHandler is the custom error handler for Fiber that uses the gateway's logger.
+func (g *Gateway) fiberErrorHandler(c *fiber.Ctx, err error) error {
+	g.logger.Error("Fiber Error", "error", err, "path", c.Path(), "method", c.Method(), "ip", c.IP())
+	return fiber.DefaultErrorHandler(c, err)
+}
+
+// Start initializes the gateway and starts the Fiber HTTP server
+func (g *Gateway) Start(port string) error {
+	if err := g.setupHandlers(); err != nil {
+		return err
+	}
+
+	swaggerDir := os.Getenv("SWAGGER_DIR")
+	if swaggerDir == "" {
+		possiblePaths := []string{
+			"swagger",
+			"./swagger",
+		}
+		for _, path := range possiblePaths {
+			if _, err := os.Stat(path); err == nil {
+				g.logger.Info("Found swagger directory", "path", path)
+				swaggerDir = path
+				break
+			}
+		}
+	}
+
+	if swaggerDir == "" {
+		g.logger.Warn("Swagger directory not found, skipping Swagger UI setup")
+	} else {
+		g.RegisterSwaggerUI(swaggerDir)
+	}
+
+	g.app.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "healthy"})
+	})
+
+	g.logger.Info("Starting Fiber HTTP server", "port", port)
+	return g.app.Listen(fmt.Sprintf(":%s", port))
+}
+
+// Shutdown gracefully shuts down the Fiber server and gRPC connections
+func (g *Gateway) Shutdown(ctx context.Context) error {
+	g.logger.Info("Shutting down Fiber server...")
+	serverErr := g.app.Shutdown()
+
+	g.logger.Info("Closing gRPC connections...")
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	var closeErrors []string
+	for service, conn := range g.serviceConns {
+		if err := conn.Close(); err != nil {
+			errMsg := fmt.Sprintf("Error closing connection to %s: %v", service, err)
+			g.logger.Error("Failed to close connection", "service", service, "error", err)
+			closeErrors = append(closeErrors, errMsg)
+		}
+	}
+
+	if serverErr != nil {
+		g.logger.Error("Failed to shutdown Fiber server", "error", serverErr)
+		closeErrors = append(closeErrors, fmt.Sprintf("Fiber server shutdown error: %v", serverErr))
+	}
+
+	if len(closeErrors) > 0 {
+		return fmt.Errorf("errors during shutdown: %s", strings.Join(closeErrors, "; "))
+	}
+
+	g.logger.Info("Gateway shutdown complete")
+	return nil
+}
+
+// setupHandlers registers gRPC-Gateway handlers for all services
+func (g *Gateway) setupHandlers() error {
+	services, err := g.discovery.GetAllServices()
+	if err != nil {
+		return fmt.Errorf("failed to get services: %w", err)
+	}
+
+	for _, service := range services {
+		switch strings.ToLower(service.Name) {
+		case "user", "user-service":
+			if err := g.setupUserServiceHandlers(service); err != nil {
+				return err
+			}
+		// Add cases for other services here
+		default:
+			g.logger.Warn("Unknown service discovered, skipping handler setup", "service_name", service.Name, "endpoint", service.Endpoint)
+		}
+	}
+
+	return nil
+}
+
+// setupUserServiceHandlers registers handlers for the user service
+func (g *Gateway) setupUserServiceHandlers(service domain.Service) error {
+	err := user_pb.RegisterUserServiceHandlerFromEndpoint(g.ctx, g.gwMux, service.Endpoint, g.opts)
+	if err != nil {
+		g.logger.Error("Failed to register user service handler from endpoint", "endpoint", service.Endpoint, "error", err)
+		return fmt.Errorf("failed to register user service handler from endpoint %s: %w", service.Endpoint, err)
+	}
+
+	g.mu.Lock()
+	conn, connErr := g.discovery.GetConnection(service.Name)
+	if connErr == nil {
+		if _, exists := g.serviceConns[service.Name]; !exists {
+			g.serviceConns[service.Name] = conn
+		}
+	} else {
+		g.logger.Warn("Could not get discovery connection for potential cleanup", "service", service.Name, "error", connErr)
+	}
+	g.mu.Unlock()
+
+	g.logger.Info("Registered gRPC-Gateway handlers via endpoint", "service", "user-service", "endpoint", service.Endpoint)
+	return nil
+}
+
+// defaultErrorHandler is the default gRPC-Gateway error handler.
+func defaultErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+	grpclog.Errorf("gRPC-Gateway Error: %v", err)
+	runtime.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
+}
+
+// headerMatcher remains the same.
+func headerMatcher(key string) (string, bool) {
+	key = strings.ToLower(key)
+	if key == "authorization" {
+		return key, true
+	}
+	if strings.HasPrefix(key, "x-") {
+		return key, true
+	}
+	return runtime.DefaultHeaderMatcher(key)
+}

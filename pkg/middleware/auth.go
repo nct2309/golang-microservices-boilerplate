@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,46 +13,78 @@ import (
 
 // UserClaims represents the custom claims in the JWT
 type UserClaims struct {
-	ID    string `json:"user_id"`
-	Role  string `json:"role"`
-	Email string `json:"email"`
+	Data map[string]interface{} `json:"data,omitempty"` // Holds custom claims
 	jwt.RegisteredClaims
 }
 
 // JWTConfig holds the configuration for JWT validation
 type JWTConfig struct {
-	Secret         string
-	TokenLookup    string
-	TokenHeadName  string
-	ContextKey     string
-	ExpirationTime time.Duration
-	ErrorHandler   fiber.ErrorHandler
+	AccessTokenSecret  string // Secret key for Access Tokens
+	RefreshTokenSecret string // Separate secret key for Refresh Tokens
+	TokenLookup        string
+	TokenHeadName      string
+	ContextKey         string
+	ExpirationTime     time.Duration // Default duration for Access Tokens
+	ErrorHandler       fiber.ErrorHandler
 }
 
 // DefaultJWTConfig is the default JWT auth configuration
 var DefaultJWTConfig = JWTConfig{
-	Secret:         "your-secret-key", // Change this in production!
-	TokenLookup:    "header:Authorization",
-	TokenHeadName:  "Bearer",
-	ContextKey:     "user",
-	ExpirationTime: 24 * time.Hour,
-	ErrorHandler:   defaultErrorHandler,
+	AccessTokenSecret:  "your-access-secret-key",  // CHANGE THIS!
+	RefreshTokenSecret: "your-refresh-secret-key", // CHANGE THIS!
+	TokenLookup:        "header:Authorization",
+	TokenHeadName:      "Bearer",
+	ContextKey:         "user",
+	ExpirationTime:     24 * time.Hour, // Default access token expiry (e.g., 1 hour)
+	ErrorHandler:       defaultErrorHandler,
 }
 
-func GenerateToken(userID, role, email string, expirationTime time.Duration) (string, error) {
+// GenerateToken creates a JWT token with the given details and secret.
+// It expects the User ID to be within customClaims under the key "sub".
+func GenerateToken(customClaims map[string]interface{}, expirationTime time.Duration, secret string) (string, error) {
+	// Extract Subject (User ID) from claims map
+	subject := "" // Default to empty string
+	if sub, ok := customClaims["sub"].(string); ok {
+		subject = sub
+	}
+	// Optionally, remove "sub" from customClaims if you don't want it duplicated in Data
+	// delete(customClaims, "sub")
+
 	claims := UserClaims{
-		ID:    userID,
-		Role:  role,
-		Email: email,
+		Data: customClaims,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "KMT-wqim",
+			Subject:   subject,         // Use 'sub' claim for User ID extracted from map
+			Issuer:    "your-app-name", // Consider making this configurable
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expirationTime)),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(DefaultJWTConfig.Secret))
+	return token.SignedString([]byte(secret))
+}
+
+// GenerateTokenPair creates both an access token and a refresh token for a user.
+// It expects the User ID to be within customClaims under the key "sub".
+func GenerateTokenPair(customClaims map[string]interface{}, accessDuration, refreshDuration time.Duration, accessSecret, refreshSecret string) (accessToken, refreshToken string, expiresAt int64, err error) {
+	// Generate Access Token
+	accessTokenExp := time.Now().Add(accessDuration)
+	accessToken, err = GenerateToken(customClaims, accessDuration, accessSecret)
+	if err != nil {
+		err = errors.New("failed to generate access token: " + err.Error())
+		return
+	}
+
+	// Generate Refresh Token
+	// Consider if refresh token needs different/simpler claims
+	refreshToken, err = GenerateToken(customClaims, refreshDuration, refreshSecret)
+	if err != nil {
+		err = errors.New("failed to generate refresh token: " + err.Error())
+		return
+	}
+
+	expiresAt = accessTokenExp.Unix()
+	return
 }
 
 // defaultErrorHandler is the default error handler
@@ -61,7 +94,7 @@ func defaultErrorHandler(c *fiber.Ctx, err error) error {
 	})
 }
 
-// AuthMiddleware is a middleware function that validates JWT tokens
+// AuthMiddleware is a middleware function that validates ACCESS tokens using the primary Secret
 func AuthMiddleware(config ...JWTConfig) fiber.Handler {
 	// Set default config
 	cfg := DefaultJWTConfig
@@ -79,18 +112,21 @@ func AuthMiddleware(config ...JWTConfig) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		// Parse the token
+		// Parse the token using the primary Secret (for access tokens)
 		claims := &UserClaims{}
 		parsedToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 			// Validate the algorithm
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
-			return []byte(cfg.Secret), nil
+			// Use the primary secret for access token validation
+			return []byte(cfg.AccessTokenSecret), nil
 		})
 
 		if err != nil {
-			if err == jwt.ErrSignatureInvalid {
+			if errors.Is(err, jwt.ErrTokenExpired) {
+				return cfg.ErrorHandler(c, errors.New("token expired"))
+			} else if errors.Is(err, jwt.ErrSignatureInvalid) {
 				return cfg.ErrorHandler(c, errors.New("invalid token signature"))
 			}
 			return cfg.ErrorHandler(c, errors.New("invalid token"))
@@ -164,7 +200,7 @@ func extractToken(c *fiber.Ctx, config JWTConfig) (string, error) {
 	}
 }
 
-// OptionalAuth middleware doesn't require authentication but will load claims if token is present
+// OptionalAuth middleware doesn't require authentication but will load claims if a valid ACCESS token is present
 func OptionalAuth(config ...JWTConfig) fiber.Handler {
 	// Set default config
 	cfg := DefaultJWTConfig
@@ -210,7 +246,16 @@ func RequireRole(role string, contextKey ...string) fiber.Handler {
 			})
 		}
 
-		if claims.Role != role {
+		// Look for role in the Data map
+		roleClaim, ok := claims.Data["role"].(string) // Assuming role is stored as a string with key "role"
+		if !ok {
+			// Role claim missing or not a string
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{
+				"error": fmt.Sprintf("role claim missing or invalid format in token"),
+			})
+		}
+
+		if roleClaim != role {
 			return c.Status(http.StatusForbidden).JSON(fiber.Map{
 				"error": "insufficient permissions",
 			})
@@ -218,4 +263,36 @@ func RequireRole(role string, contextKey ...string) fiber.Handler {
 
 		return c.Next()
 	}
+}
+
+// --- Refresh Token Specific Logic (Example Placeholder) ---
+
+// ValidateRefreshToken specifically validates a refresh token using the refresh secret.
+// Note: This should likely live in the usecase or a dedicated auth service, not middleware.
+func ValidateRefreshToken(tokenString string, refreshSecret string) (*UserClaims, error) {
+	claims := &UserClaims{}
+	parsedToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		// Use the REFRESH secret for validation
+		return []byte(refreshSecret), nil
+	})
+
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, errors.New("refresh token expired")
+		} else if errors.Is(err, jwt.ErrSignatureInvalid) {
+			return nil, errors.New("invalid refresh token signature")
+		}
+		return nil, errors.New("invalid refresh token")
+	}
+
+	if !parsedToken.Valid {
+		return nil, errors.New("invalid refresh token")
+	}
+
+	// Optional: Check against a revocation list here if implementing
+
+	return claims, nil
 }

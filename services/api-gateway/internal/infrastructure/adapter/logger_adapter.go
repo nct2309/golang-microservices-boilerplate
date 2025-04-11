@@ -1,10 +1,9 @@
 package adapter
 
 import (
+	"golang-microservices-boilerplate/pkg/core/logger"
 	"log"
 	"os"
-
-	"golang-microservices-boilerplate/pkg/core"
 )
 
 // StdLoggerAdapter provides compatibility when structured logger initialization fails
@@ -45,12 +44,12 @@ func (a *StdLoggerAdapter) Fatal(msg string, args ...interface{}) {
 }
 
 // With returns a logger with the given context values
-func (a *StdLoggerAdapter) With(args ...interface{}) core.Logger {
+func (a *StdLoggerAdapter) With(args ...interface{}) logger.Logger {
 	return a // No-op implementation for simplicity
 }
 
 // Named returns a logger with the given name
-func (a *StdLoggerAdapter) Named(name string) core.Logger {
+func (a *StdLoggerAdapter) Named(name string) logger.Logger {
 	newLogger := log.New(os.Stdout, "["+name+"] ", log.LstdFlags|log.Lshortfile)
 	return &StdLoggerAdapter{stdLogger: newLogger}
 }
