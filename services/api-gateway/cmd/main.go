@@ -42,12 +42,10 @@ func main() {
 	// Initialize Kubernetes service discovery
 	namespace := utils.GetEnv("K8S_NAMESPACE", "ride-sharing")
 	servicePrefix := utils.GetEnv("SERVICE_PREFIX", "user-")
-	refreshInterval := utils.GetEnvDuration("REFRESH_INTERVAL", 3600*time.Second)
 
 	discovery, err := k8s.NewKubernetesDiscovery(
 		k8s.WithNamespace(namespace),
 		k8s.WithServicePrefix(servicePrefix),
-		k8s.WithRefreshInterval(refreshInterval),
 		k8s.WithLogger(log.New(os.Stdout, "[K8S-DISCOVERY] ", log.LstdFlags)), // Keep using std logger for k8s for now
 	)
 	if err != nil {

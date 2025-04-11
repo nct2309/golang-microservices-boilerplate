@@ -6,12 +6,11 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"time"
+
+	// "time" // No longer needed for refresh interval
 
 	"golang-microservices-boilerplate/services/api-gateway/internal/domain"
 
-	google_grpc "google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -19,17 +18,16 @@ import (
 )
 
 // KubernetesDiscovery implements the ServiceDiscovery interface for Kubernetes
+// It discovers service names and endpoints once at initialization.
 type KubernetesDiscovery struct {
-	client           kubernetes.Interface
-	namespace        string
-	servicePrefix    string
-	refreshInterval  time.Duration
-	logger           *log.Logger
-	connections      map[string]*google_grpc.ClientConn
-	connectionsMutex sync.RWMutex
-	services         []domain.Service
-	servicesMutex    sync.RWMutex
-	done             chan struct{}
+	client        kubernetes.Interface
+	namespace     string
+	servicePrefix string
+	logger        *log.Logger
+	services      []domain.Service
+	servicesMutex sync.RWMutex // Mutex for services slice
+	// done channel removed
+	// refreshInterval removed
 }
 
 // DiscoveryOption configures the KubernetesDiscovery
@@ -49,13 +47,6 @@ func WithServicePrefix(prefix string) DiscoveryOption {
 	}
 }
 
-// WithRefreshInterval sets the interval for refreshing service discovery
-func WithRefreshInterval(interval time.Duration) DiscoveryOption {
-	return func(kd *KubernetesDiscovery) {
-		kd.refreshInterval = interval
-	}
-}
-
 // WithLogger sets the logger for discovery
 func WithLogger(logger *log.Logger) DiscoveryOption {
 	return func(kd *KubernetesDiscovery) {
@@ -64,14 +55,14 @@ func WithLogger(logger *log.Logger) DiscoveryOption {
 }
 
 // NewKubernetesDiscovery creates a new KubernetesDiscovery instance
+// and performs service discovery once.
 func NewKubernetesDiscovery(opts ...DiscoveryOption) (*KubernetesDiscovery, error) {
 	kd := &KubernetesDiscovery{
-		namespace:       "default",        // Default namespace
-		refreshInterval: 60 * time.Second, // Default refresh interval
-		connections:     make(map[string]*google_grpc.ClientConn),
-		services:        []domain.Service{},
-		done:            make(chan struct{}),
-		logger:          log.Default(),
+		namespace: "default",          // Default namespace
+		services:  []domain.Service{}, // Initialize services slice
+		logger:    log.Default(),
+		// refreshInterval removed
+		// done channel removed
 	}
 
 	// Apply options
@@ -97,151 +88,52 @@ func NewKubernetesDiscovery(opts ...DiscoveryOption) (*KubernetesDiscovery, erro
 	}
 	kd.client = clientset
 
-	kd.logger.Println("KubernetesDiscovery initialized")
+	kd.logger.Println("KubernetesDiscovery initializing...")
 
-	// Perform initial discovery
-	if err := kd.RefreshConnections(); err != nil {
-		kd.logger.Printf("Initial service discovery failed: %v", err)
-		// Don't fail initialization, allow retry
+	// Perform initial discovery immediately
+	if err := kd.discoverAndStoreServices(); err != nil {
+		// Log the error but potentially allow startup if services might appear later?
+		// Or return the error to prevent startup if services must exist initially.
+		return nil, fmt.Errorf("initial service discovery failed: %w", err)
 	}
 
-	// Start background refresh
-	go kd.startBackgroundRefresh()
-
+	// No background refresh started
+	kd.logger.Println("KubernetesDiscovery initialized successfully.")
 	return kd, nil
 }
 
-// startBackgroundRefresh starts a goroutine to periodically refresh services
-func (kd *KubernetesDiscovery) startBackgroundRefresh() {
-	ticker := time.NewTicker(kd.refreshInterval)
-	defer ticker.Stop()
-
-	kd.logger.Printf("Starting background service discovery refresh every %s", kd.refreshInterval)
-
-	for {
-		select {
-		case <-ticker.C:
-			if err := kd.RefreshConnections(); err != nil {
-				kd.logger.Printf("Error during background service refresh: %v", err)
-			}
-		case <-kd.done:
-			kd.logger.Println("Stopping background service discovery refresh")
-			return
-		}
-	}
-}
-
-// GetAllServices returns all discovered services
+// GetAllServices returns all discovered services found during initialization
 func (kd *KubernetesDiscovery) GetAllServices() ([]domain.Service, error) {
 	kd.servicesMutex.RLock()
 	defer kd.servicesMutex.RUnlock()
 	// Return a copy to prevent modification
 	copiedServices := make([]domain.Service, len(kd.services))
 	copy(copiedServices, kd.services)
+	// Error is always nil now as it's just returning the stored slice
 	return copiedServices, nil
 }
 
-// GetConnection returns a gRPC connection for a service
-func (kd *KubernetesDiscovery) GetConnection(serviceName string) (*google_grpc.ClientConn, error) {
-	kd.connectionsMutex.RLock()
-	conn, ok := kd.connections[serviceName]
-	kd.connectionsMutex.RUnlock()
-
-	if !ok {
-		// Attempt to refresh if connection not found, might have just appeared
-		kd.logger.Printf("Connection for service %s not found, attempting refresh...", serviceName)
-		if err := kd.RefreshConnections(); err != nil {
-			return nil, fmt.Errorf("failed to refresh connections while getting connection for %s: %w", serviceName, err)
-		}
-		kd.connectionsMutex.RLock()
-		conn, ok = kd.connections[serviceName]
-		kd.connectionsMutex.RUnlock()
-		if !ok {
-			return nil, fmt.Errorf("service %s not found after refresh", serviceName)
-		}
-	}
-	return conn, nil
-}
-
-// Close closes all connections and stops background refresh
+// Close is now a no-op as there are no background tasks or connections to close.
 func (kd *KubernetesDiscovery) Close() error {
-	kd.logger.Println("Closing KubernetesDiscovery...")
-	close(kd.done) // Signal background refresh to stop
-
-	kd.connectionsMutex.Lock()
-	defer kd.connectionsMutex.Unlock()
-
-	var closeErrors []string
-	for name, conn := range kd.connections {
-		if err := conn.Close(); err != nil {
-			errMsg := fmt.Sprintf("failed to close connection to %s: %v", name, err)
-			kd.logger.Println(errMsg)
-			closeErrors = append(closeErrors, errMsg)
-		}
-		delete(kd.connections, name)
-	}
-
-	if len(closeErrors) > 0 {
-		return fmt.Errorf("errors closing connections: %s", strings.Join(closeErrors, "; "))
-	}
-	kd.logger.Println("KubernetesDiscovery closed successfully")
+	kd.logger.Println("Closing KubernetesDiscovery (no-op).")
 	return nil
 }
 
-// RefreshConnections refreshes all service connections
-func (kd *KubernetesDiscovery) RefreshConnections() error {
+// discoverAndStoreServices discovers services once and stores them.
+// Renamed from RefreshConnections.
+func (kd *KubernetesDiscovery) discoverAndStoreServices() error {
+	kd.logger.Println("Discovering Kubernetes services...")
 	services, err := kd.discoverServices()
 	if err != nil {
 		return fmt.Errorf("failed to discover services: %w", err)
 	}
 
-	// Store the discovered services (only Name and Endpoint now)
+	// Store the discovered services
 	kd.servicesMutex.Lock()
 	kd.services = services
 	kd.servicesMutex.Unlock()
 
-	// Get current connections
-	kd.connectionsMutex.Lock()
-	defer kd.connectionsMutex.Unlock()
-
-	// Track which connections should be kept
-	activeConnections := make(map[string]bool)
-
-	// Create or update connections for each service
-	for _, service := range services {
-		activeConnections[service.Name] = true
-
-		// Check if we already have a connection
-		if _, exists := kd.connections[service.Name]; !exists {
-			// Create a new connection
-			conn, err := google_grpc.NewClient(service.Endpoint, google_grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				kd.logger.Printf("Failed to create gRPC connection to %s (%s): %v", service.Name, service.Endpoint, err)
-				continue // Try next service
-			}
-
-			kd.connections[service.Name] = conn
-			kd.logger.Printf("Established connection to service: %s at %s", service.Name, service.Endpoint)
-		}
-
-		// REMOVED: No longer discover methods using reflection here
-		// methods, err := kd.reflectionClient.GetMethodsForService(conn, service.Name)
-		// ... error handling ...
-		// kd.services[i].Methods = methods
-		// kd.logger.Printf("Discovered %d methods for service: %s", len(methods), service.Name)
-	}
-
-	// Close connections that are no longer active
-	for name, conn := range kd.connections {
-		if !activeConnections[name] {
-			if err := conn.Close(); err != nil {
-				kd.logger.Printf("Failed to close inactive connection to %s: %v", name, err)
-			}
-			delete(kd.connections, name)
-			kd.logger.Printf("Closed inactive connection to service: %s", name)
-		}
-	}
-
+	kd.logger.Printf("Successfully discovered and stored %d services.", len(services))
 	return nil
 }
 
@@ -264,29 +156,33 @@ func (kd *KubernetesDiscovery) discoverServices() ([]domain.Service, error) {
 
 		// Skip if no ports
 		if len(svc.Spec.Ports) == 0 {
+			kd.logger.Printf("Service %s skipped: No ports defined.", svc.Name)
 			continue
 		}
 
 		// Find the gRPC port
 		var port int32
 		for _, p := range svc.Spec.Ports {
-			if p.Name == "grpc" || p.Port == 50051 {
+			if p.Name == "grpc" || p.Port == 50051 { // Common gRPC port names/numbers
 				port = p.Port
 				break
 			}
 		}
 
-		// If no gRPC port found, use the first one
+		// If no specifically named gRPC port found, use the first one
 		if port == 0 && len(svc.Spec.Ports) > 0 {
 			port = svc.Spec.Ports[0].Port
+			kd.logger.Printf("Service %s: No 'grpc' or '50051' port found, using first port: %d", svc.Name, port)
 		}
 
 		// Skip if still no port
 		if port == 0 {
+			kd.logger.Printf("Service %s skipped: No suitable port found (looked for 'grpc', 50051, or first port).", svc.Name)
 			continue
 		}
 
-		// Create endpoint
+		// Create endpoint (adjust if using ClusterIP, NodePort, or LoadBalancer differently)
+		// This assumes ClusterIP service type and internal cluster DNS resolution.
 		endpoint := fmt.Sprintf("%s.%s.svc.cluster.local:%d", svc.Name, kd.namespace, port)
 
 		// Service name is the Kubernetes service name
@@ -296,12 +192,15 @@ func (kd *KubernetesDiscovery) discoverServices() ([]domain.Service, error) {
 		service := domain.Service{
 			Name:     serviceName,
 			Endpoint: endpoint,
-			// REMOVED: Methods field is no longer populated here
-			// Methods:  []domain.Method{},
 		}
 
 		services = append(services, service)
 		kd.logger.Printf("Discovered service: %s at %s", serviceName, endpoint)
+	}
+
+	// Handle case where no services are found
+	if len(services) == 0 {
+		kd.logger.Printf("WARN: No services found matching prefix '%s' in namespace '%s'", kd.servicePrefix, kd.namespace)
 	}
 
 	return services, nil
@@ -310,7 +209,7 @@ func (kd *KubernetesDiscovery) discoverServices() ([]domain.Service, error) {
 // hasPrefix checks if a service name has the specified prefix
 func (kd *KubernetesDiscovery) hasPrefix(name, prefix string) bool {
 	if prefix == "" {
-		return true
+		return true // If no prefix specified, match all
 	}
 	return strings.HasPrefix(name, prefix)
 }

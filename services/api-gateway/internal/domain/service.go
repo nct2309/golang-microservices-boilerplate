@@ -1,9 +1,5 @@
 package domain
 
-import (
-	"google.golang.org/grpc"
-)
-
 // Service represents a microservice definition discovered by the discovery service
 type Service struct {
 	Name     string `json:"name"`     // Name of the Kubernetes service (e.g., user-service)
@@ -23,19 +19,13 @@ type Method struct {
 }
 */
 
-// ServiceDiscovery defines methods for discovering services
+// ServiceDiscovery defines the interface for discovering backend services.
 type ServiceDiscovery interface {
 	// GetAllServices returns all available services (name and endpoint only)
 	GetAllServices() ([]Service, error)
 
-	// GetConnection returns a gRPC connection to a specific service
-	GetConnection(serviceName string) (*grpc.ClientConn, error)
-
 	// Close closes all open connections
 	Close() error
-
-	// RefreshConnections refreshes all service connections
-	RefreshConnections() error
 }
 
 // GrpcClient interface is removed as the gateway directly uses generated clients

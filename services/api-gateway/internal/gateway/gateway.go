@@ -166,31 +166,17 @@ func (g *Gateway) Start(port string) error {
 	return g.app.Listen(fmt.Sprintf(":%s", port))
 }
 
-// Shutdown gracefully shuts down the Fiber server and gRPC connections
+// Shutdown gracefully shuts down the Fiber server
 func (g *Gateway) Shutdown(ctx context.Context) error {
 	g.logger.Info("Shutting down Fiber server...")
 	serverErr := g.app.Shutdown()
 
-	g.logger.Info("Closing gRPC connections...")
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	var closeErrors []string
-	for service, conn := range g.serviceConns {
-		if err := conn.Close(); err != nil {
-			errMsg := fmt.Sprintf("Error closing connection to %s: %v", service, err)
-			g.logger.Error("Failed to close connection", "service", service, "error", err)
-			closeErrors = append(closeErrors, errMsg)
-		}
-	}
+	// Removed closing of gRPC connections previously managed by discovery
+	// The connections used by Register...FromEndpoint are managed internally by grpc-gateway/grpc
 
 	if serverErr != nil {
 		g.logger.Error("Failed to shutdown Fiber server", "error", serverErr)
-		closeErrors = append(closeErrors, fmt.Sprintf("Fiber server shutdown error: %v", serverErr))
-	}
-
-	if len(closeErrors) > 0 {
-		return fmt.Errorf("errors during shutdown: %s", strings.Join(closeErrors, "; "))
+		return fmt.Errorf("fiber server shutdown error: %w", serverErr)
 	}
 
 	g.logger.Info("Gateway shutdown complete")
@@ -226,17 +212,6 @@ func (g *Gateway) setupUserServiceHandlers(service domain.Service) error {
 		g.logger.Error("Failed to register user service handler from endpoint", "endpoint", service.Endpoint, "error", err)
 		return fmt.Errorf("failed to register user service handler from endpoint %s: %w", service.Endpoint, err)
 	}
-
-	g.mu.Lock()
-	conn, connErr := g.discovery.GetConnection(service.Name)
-	if connErr == nil {
-		if _, exists := g.serviceConns[service.Name]; !exists {
-			g.serviceConns[service.Name] = conn
-		}
-	} else {
-		g.logger.Warn("Could not get discovery connection for potential cleanup", "service", service.Name, "error", connErr)
-	}
-	g.mu.Unlock()
 
 	g.logger.Info("Registered gRPC-Gateway handlers via endpoint", "service", "user-service", "endpoint", service.Endpoint)
 	return nil
