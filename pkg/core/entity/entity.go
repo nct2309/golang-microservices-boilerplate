@@ -25,27 +25,31 @@ type BaseEntity struct {
 }
 
 // GetID returns the entity ID
-func (base *BaseEntity) GetID() uuid.UUID {
+func (base BaseEntity) GetID() uuid.UUID {
 	return base.ID
 }
 
-// SetID sets the entity ID
-func (base *BaseEntity) SetID(id uuid.UUID) {
+func (base *BaseEntity) setID(id uuid.UUID) {
 	base.ID = id
 }
 
+// SetID sets the entity ID
+func (base BaseEntity) SetID(id uuid.UUID) {
+	base.setID(id)
+}
+
 // GetCreatedAt returns the creation timestamp
-func (base *BaseEntity) GetCreatedAt() time.Time {
+func (base BaseEntity) GetCreatedAt() time.Time {
 	return base.CreatedAt
 }
 
 // GetUpdatedAt returns the last update timestamp
-func (base *BaseEntity) GetUpdatedAt() time.Time {
+func (base BaseEntity) GetUpdatedAt() time.Time {
 	return base.UpdatedAt
 }
 
 // GetDeletedAt returns the deletion timestamp
-func (base *BaseEntity) GetDeletedAt() *time.Time {
+func (base BaseEntity) GetDeletedAt() *time.Time {
 	return base.DeletedAt
 }
 

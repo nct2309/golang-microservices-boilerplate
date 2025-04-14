@@ -19,3 +19,9 @@ func CORSMiddleware() fiber.Handler {
 		return c.Next()
 	}
 }
+
+// how to add above cors to allow https
+// add the following to the middleware
+// c.Set("Access-Control-Allow-Origin", "*")
+// c.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+// c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")

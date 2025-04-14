@@ -33,16 +33,18 @@ type BaseRepository[T entity.Entity] interface {
 }
 
 // GormBaseRepository implements the BaseRepository interface using GORM
+// Reverted type parameters
 type GormBaseRepository[T entity.Entity] struct {
 	DB        *gorm.DB
 	ModelType reflect.Type
 }
 
 // NewGormBaseRepository creates a new GORM-based repository
+// Reverted type parameters
 func NewGormBaseRepository[T entity.Entity](db *gorm.DB) *GormBaseRepository[T] {
-	var modelPtr *T
+	var modelPtr *T // Use pointer to get type
 	ptrType := reflect.TypeOf(modelPtr)
-	modelType := ptrType.Elem()
+	modelType := ptrType.Elem() // Get element type (the struct)
 	return &GormBaseRepository[T]{
 		DB:        db,
 		ModelType: modelType,
@@ -93,7 +95,7 @@ func (r *GormBaseRepository[T]) applyFilterOptions(db *gorm.DB, opts types.Filte
 }
 
 // FindAll retrieves all entities of type *T with filter options
-// It returns a pointer to PaginationResult[T], which internally holds []*T
+// Returns PaginationResult[T], Items field will hold []*T
 func (r *GormBaseRepository[T]) FindAll(ctx context.Context, opts types.FilterOptions) (*types.PaginationResult[T], error) {
 	var entities []*T // Slice of pointers
 	var totalCount int64
@@ -113,39 +115,36 @@ func (r *GormBaseRepository[T]) FindAll(ctx context.Context, opts types.FilterOp
 	countOpts := types.FilterOptions{
 		Filters:        opts.Filters,
 		IncludeDeleted: opts.IncludeDeleted,
-		// Exclude limit/offset/sort for count
 	}
 	countDB = r.applyFilterOptions(countDB, countOpts)
 	if err := countDB.Count(&totalCount).Error; err != nil {
 		return nil, fmt.Errorf("failed to count items: %w", err)
 	}
 
-	// Apply all options (including limit/offset/sort) for fetching items
+	// Apply all options for fetching items
 	queryDB := r.applyFilterOptions(db, opts)
 	if err := queryDB.Find(&entities).Error; err != nil {
 		return nil, fmt.Errorf("failed to find items: %w", err)
 	}
 
-	// Ensure limit and offset reflect the actual query params used
 	limit := opts.Limit
 	if limit <= 0 {
-		limit = 50 // Use default if invalid
+		limit = 50
 	}
 	offset := opts.Offset
 	if offset < 0 {
-		offset = 0 // Use default if invalid
+		offset = 0
 	}
 
-	// Construct and return a pointer to PaginationResult[T]
 	return &types.PaginationResult[T]{
-		Items:      entities, // entities is already []*T
+		Items:      entities, // GORM Find populates []*T
 		TotalItems: totalCount,
-		Limit:      limit,  // Reflect the limit used
-		Offset:     offset, // Reflect the offset used
+		Limit:      limit,
+		Offset:     offset,
 	}, nil
 }
 
-// FindWithFilter retrieves entities that match the provided filter criteria with pagination support
+// FindWithFilter retrieves entities that match the provided filter criteria
 func (r *GormBaseRepository[T]) FindWithFilter(ctx context.Context, filter map[string]interface{}, opts types.FilterOptions) (*types.PaginationResult[T], error) {
 	if opts.Filters == nil {
 		opts.Filters = make(map[string]interface{})
@@ -153,7 +152,6 @@ func (r *GormBaseRepository[T]) FindWithFilter(ctx context.Context, filter map[s
 	for k, v := range filter {
 		opts.Filters[k] = v
 	}
-	// Delegates to FindAll, which correctly returns *types.PaginationResult[T]
 	return r.FindAll(ctx, opts)
 }
 
@@ -237,21 +235,17 @@ func (r *GormBaseRepository[T]) CreateMany(ctx context.Context, entities []*T) e
 }
 
 // UpdateMany updates multiple entities within a transaction.
-// It iterates through the provided entities and updates each one based on its ID.
 func (r *GormBaseRepository[T]) UpdateMany(ctx context.Context, entities []*T) error {
 	if len(entities) == 0 {
-		return nil // Nothing to update
+		return nil
 	}
 	return r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, entity := range entities {
 			id := (*entity).GetID()
 			if id == uuid.Nil {
-				// Optionally log the entity index or skip
 				return fmt.Errorf("entity in bulk update list missing ID")
 			}
-			// Use tx database handle for updates within the transaction
 			if err := tx.Model(entity).Where("id = ?", id).Updates(entity).Error; err != nil {
-				// Optionally include ID in the error message
 				return fmt.Errorf("failed to update entity with ID %s during bulk update: %w", id, err)
 			}
 		}
@@ -262,7 +256,7 @@ func (r *GormBaseRepository[T]) UpdateMany(ctx context.Context, entities []*T) e
 // DeleteMany removes multiple entities matching the provided IDs.
 func (r *GormBaseRepository[T]) DeleteMany(ctx context.Context, ids []uuid.UUID, hardDelete bool) error {
 	if len(ids) == 0 {
-		return nil // Nothing to delete
+		return nil
 	}
 
 	modelInstance := reflect.New(r.ModelType).Interface()
@@ -270,19 +264,14 @@ func (r *GormBaseRepository[T]) DeleteMany(ctx context.Context, ids []uuid.UUID,
 
 	var result *gorm.DB
 	if hardDelete {
-		// Important: Use Unscoped for hard delete
 		result = db.Unscoped().Delete(modelInstance)
 	} else {
 		result = db.Delete(modelInstance)
 	}
 
-	// Check for errors, RowsAffected can be checked if needed but error is primary
 	if result.Error != nil {
 		return fmt.Errorf("failed during bulk delete: %w", result.Error)
 	}
-
-	// Optional: Check if the number of affected rows matches len(ids)
-	// if result.RowsAffected != int64(len(ids)) { ... log or return specific error ... }
 
 	return nil
 }

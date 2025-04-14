@@ -1,9 +1,15 @@
 package dto
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // MapToEntity copies data from a source DTO (or any struct/pointer) to a destination entity pointer.
@@ -146,4 +152,30 @@ func MapToDTO(from interface{}, to interface{}) error {
 	// If different logic is ever needed (e.g., special handling for DTO fields),
 	// this function can be implemented separately.
 	return MapToEntity(from, to)
+}
+
+// ConvertInterfaceToAny converts an interface to a protobuf Any type.
+func ConvertInterfaceToAny(v interface{}) (*any.Any, error) {
+	anyValue := &any.Any{}
+	bytes, _ := json.Marshal(v)
+	bytesValue := &wrappers.BytesValue{
+		Value: bytes,
+	}
+	err := anypb.MarshalFrom(anyValue, bytesValue, proto.MarshalOptions{})
+	return anyValue, err
+}
+
+// ConvertAnyToInterface converts a protobuf Any type to an interface.
+func ConvertAnyToInterface(anyValue *any.Any) (interface{}, error) {
+	var value interface{}
+	bytesValue := &wrappers.BytesValue{}
+	err := anypb.UnmarshalTo(anyValue, bytesValue, proto.UnmarshalOptions{})
+	if err != nil {
+		return value, err
+	}
+	uErr := json.Unmarshal(bytesValue.Value, &value)
+	if uErr != nil {
+		return value, uErr
+	}
+	return value, nil
 }

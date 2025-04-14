@@ -13,17 +13,15 @@ spec:
       labels:
         app: user-service
     spec:
-      nodeSelector:
-        service: user-service
+      # Commenting out the nodeSelector to allow scheduling on any node
+      # nodeSelector:
+      #   app: user-service
       containers:
       - name: user-service
         image: user-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9090
-        envFrom:
-        - configMapRef:
-            name: user-service-config
 ---
 apiVersion: v1
 kind: Service

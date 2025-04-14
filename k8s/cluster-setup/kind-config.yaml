@@ -9,10 +9,10 @@ nodes:
     protocol: TCP  # For API Gateway
   - containerPort: 9090
     hostPort: 9090
-    protocol: TCP  # For user-service gRPC
-- role: worker
-  labels:
-    service: api-gateway
-- role: worker
-  labels:
-    service: user-service 
+    protocol: TCP  # Assuming all services use this port, adjust if needed
+# - role: worker
+#   labels:
+#     service: api-gateway
+# - role: worker
+#   labels:
+#     service: user-service 

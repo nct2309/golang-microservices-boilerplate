@@ -14,24 +14,15 @@ spec:
         app: api-gateway
     spec:
       serviceAccountName: api-gateway-sa
-      nodeSelector:
-        service: api-gateway
+      # Commenting out nodeSelector for local Kind deployment
+      # nodeSelector:
+      #   service: api-gateway
       containers:
       - name: api-gateway
         image: api-gateway:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081
-        envFrom:
-        - configMapRef:
-            name: api-gateway-config
-        env:
-        - name: USER_SERVICE_HOST
-          value: "user-service.ride-sharing.svc.cluster.local"
-        - name: USER_SERVICE_PORT
-          value: "9090"
-        - name: POD_NAMESPACE
-          value: "ride-sharing"
 ---
 apiVersion: v1
 kind: Service

@@ -15,6 +15,7 @@ import (
 
 // DBConfig contains all the database configuration options
 type DBConfig struct {
+	URI          string
 	Host         string
 	Port         int
 	Username     string
@@ -48,6 +49,7 @@ func DefaultDBConfig() DBConfig {
 	}
 
 	return DBConfig{
+		URI:          utils.GetEnv("DB_URI", ""),
 		Host:         utils.GetEnv("DB_HOST", "localhost"),
 		Port:         port,
 		Username:     utils.GetEnv("DB_USER", "postgres"),
@@ -69,7 +71,7 @@ type DatabaseConnection struct {
 
 // NewDatabaseConnection creates a new database connection using the provided configuration
 func NewDatabaseConnection(config DBConfig) (*DatabaseConnection, error) {
-	dsn := "postgresql://test_owner:npg_7wBPCKcbV6yH@ep-dry-recipe-a1xsq2aj-pooler.ap-southeast-1.aws.neon.tech/test"
+	dsn := config.URI
 
 	// Configure GORM logger
 	gormLogger := logger.New(
