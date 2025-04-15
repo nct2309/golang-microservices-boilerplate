@@ -3,6 +3,7 @@ package grpc
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"golang-microservices-boilerplate/pkg/core/logger"
@@ -12,7 +13,6 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
@@ -60,7 +60,7 @@ func NewBaseGrpcServerWithConfig(logger logger.Logger, config *GrpcServerConfig)
 	// Set up server interceptors
 	recoveryHandler := func(p interface{}) (err error) {
 		logger.Error("Recovered from panic in gRPC handler", "panic", p)
-		return status.Errorf(codes.Internal, "internal server error")
+		return status.Errorf(http.StatusInternalServerError, "internal server error: %v", p)
 	}
 
 	opts := []grpc_recovery.Option{

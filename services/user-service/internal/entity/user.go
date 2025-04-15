@@ -35,16 +35,16 @@ func (r Role) IsValid() bool {
 // User represents a system user domain entity
 type User struct {
 	entity.BaseEntity        // Embed core base entity
-	Username          string `json:"username" gorm:"uniqueIndex;not null"`
-	Email             string `json:"email" gorm:"uniqueIndex;not null"`
-	Password          string `json:"-" gorm:"not null"` // Password is never exposed
-	FirstName         string `json:"first_name" gorm:"size:50;not null"`
-	LastName          string `json:"last_name" gorm:"size:50;not null"`
+	Username          string `json:"username,omitempty" gorm:"uniqueIndex;not null"`
+	Email             string `json:"email,omitempty" gorm:"uniqueIndex;not null"`
+	Password          string `json:"password,omitempty" gorm:"not null"` // Password is never exposed
+	FirstName         string `json:"first_name,omitempty" gorm:"size:50;not null"`
+	LastName          string `json:"last_name,omitempty" gorm:"size:50;not null"`
 	// Use string for Role, restricted to known values.
 	// Ensure database schema uses a string type (e.g., VARCHAR).
-	Role        Role       `json:"role" gorm:"size:10;not null"`   // Store role as string
-	IsActive    bool       `json:"is_active" gorm:"default:false"` // Default new users to inactive
-	LastLoginAt *time.Time `json:"last_login_at" gorm:"default:null"`
+	Role        Role       `json:"role,omitempty" gorm:"size:10;not null"`   // Store role as string
+	IsActive    bool       `json:"is_active,omitempty" gorm:"default:false"` // Default new users to inactive
+	LastLoginAt *time.Time `json:"last_login_at,omitempty" gorm:"default:null"`
 	// Add other fields from proto if they belong in the core domain model
 	// Example: Phone, Address, ProfilePic, Age might or might not be core domain fields
 	Phone      string `json:"phone,omitempty" gorm:"size:20"`

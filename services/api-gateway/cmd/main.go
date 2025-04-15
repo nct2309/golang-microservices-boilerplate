@@ -41,11 +41,9 @@ func main() {
 
 	// Initialize Kubernetes service discovery
 	namespace := utils.GetEnv("K8S_NAMESPACE", "ride-sharing")
-	servicePrefix := utils.GetEnv("SERVICE_PREFIX", "user-")
 
 	discovery, err := k8s.NewKubernetesDiscovery(
 		k8s.WithNamespace(namespace),
-		k8s.WithServicePrefix(servicePrefix),
 		k8s.WithLogger(log.New(os.Stdout, "[K8S-DISCOVERY] ", log.LstdFlags)), // Keep using std logger for k8s for now
 	)
 	if err != nil {
@@ -61,7 +59,7 @@ func main() {
 	)
 
 	// Start server in a goroutine
-	port := utils.GetEnv("PORT", "8080")
+	port := utils.GetEnv("PORT", "8081")
 	go func() {
 		if err := gw.Start(port); err != nil {
 			appLogger.Fatal("Failed to start server", "error", err)

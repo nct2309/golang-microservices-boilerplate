@@ -50,9 +50,7 @@ func Validate(s interface{}) error {
 			return ValidationErrors{errors: validationErrs}
 		}
 		// Return other types of errors (e.g., invalid input type)
-		// return fmt.Errorf("validation error: %w", err)
-		// should printf the name of interface too
-		return fmt.Errorf("%T validation error: %w", s, err)
+		return fmt.Errorf("validation error: %w", err)
 	}
 	return nil
 }

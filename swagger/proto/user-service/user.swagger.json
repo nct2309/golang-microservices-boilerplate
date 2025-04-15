@@ -469,6 +469,12 @@
           "example": "john.doe.updated@example.com",
           "description": "New email address."
         },
+        "password": {
+          "type": "string",
+          "format": "password",
+          "example": "NewSecureP@ssw0rd!",
+          "description": "New password (min 8 characters). Use a dedicated endpoint for password changes if more security is needed."
+        },
         "firstName": {
           "type": "string",
           "example": "Jonathan",
@@ -979,6 +985,13 @@
           "example": "https://example.com/profiles/updated.jpg",
           "description": "New profile picture URL.",
           "title": "Corrected escaping"
+        },
+        "password": {
+          "type": "string",
+          "format": "password",
+          "example": "BulkUpdateP@ssw0rd!",
+          "description": "New password (min 8 characters). Consider security implications for bulk password updates.",
+          "title": "Add optional password field"
         }
       },
       "description": "Specifies the ID and the fields to update for a single user in a bulk operation.",

@@ -1,15 +1,10 @@
 package dto
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
-
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // MapToEntity copies data from a source DTO (or any struct/pointer) to a destination entity pointer.
@@ -154,28 +149,57 @@ func MapToDTO(from interface{}, to interface{}) error {
 	return MapToEntity(from, to)
 }
 
-// ConvertInterfaceToAny converts an interface to a protobuf Any type.
-func ConvertInterfaceToAny(v interface{}) (*any.Any, error) {
-	anyValue := &any.Any{}
-	bytes, _ := json.Marshal(v)
-	bytesValue := &wrappers.BytesValue{
-		Value: bytes,
+// applyPartialUpdate applies non-nil fields from a DTO struct (src) to a target entity struct (dst).
+// It assumes the convention that pointer fields in the DTO indicate fields to be updated.
+// dst must be a pointer to a struct.
+func ApplyPartialUpdate(src interface{}, dst interface{}) error {
+	dstValue := reflect.ValueOf(dst)
+	if dstValue.Kind() != reflect.Ptr || dstValue.IsNil() {
+		return errors.New("destination must be a non-nil pointer")
 	}
-	err := anypb.MarshalFrom(anyValue, bytesValue, proto.MarshalOptions{})
-	return anyValue, err
-}
+	dstElem := dstValue.Elem()
+	if dstElem.Kind() != reflect.Struct {
+		return errors.New("destination must point to a struct")
+	}
 
-// ConvertAnyToInterface converts a protobuf Any type to an interface.
-func ConvertAnyToInterface(anyValue *any.Any) (interface{}, error) {
-	var value interface{}
-	bytesValue := &wrappers.BytesValue{}
-	err := anypb.UnmarshalTo(anyValue, bytesValue, proto.UnmarshalOptions{})
-	if err != nil {
-		return value, err
+	srcValue := reflect.ValueOf(src)
+	if srcValue.Kind() == reflect.Ptr {
+		if srcValue.IsNil() {
+			return nil // Nothing to update from a nil source DTO
+		}
+		srcValue = srcValue.Elem()
 	}
-	uErr := json.Unmarshal(bytesValue.Value, &value)
-	if uErr != nil {
-		return value, uErr
+	if srcValue.Kind() != reflect.Struct {
+		return errors.New("source must be a struct or pointer to struct")
 	}
-	return value, nil
+
+	srcType := srcValue.Type()
+	for i := 0; i < srcValue.NumField(); i++ {
+		srcField := srcValue.Field(i)
+		srcFieldType := srcType.Field(i)
+
+		// Process only if the source field is a non-nil pointer
+		if srcField.Kind() == reflect.Ptr && !srcField.IsNil() {
+			// Get the underlying value from the source pointer
+			srcElemValue := srcField.Elem()
+
+			// Find the corresponding field in the destination struct by name
+			dstField := dstElem.FieldByName(srcFieldType.Name)
+
+			if dstField.IsValid() && dstField.CanSet() {
+				// Check if the source element type can be assigned or converted to the destination field type
+				if srcElemValue.Type().AssignableTo(dstField.Type()) {
+					dstField.Set(srcElemValue)
+				} else if srcElemValue.Type().ConvertibleTo(dstField.Type()) {
+					dstField.Set(srcElemValue.Convert(dstField.Type()))
+				} else {
+					// Log or return error for incompatible types if needed
+					// This case might indicate a mismatch between DTO and Entity struct definitions
+					return fmt.Errorf("cannot assign/convert DTO field '%s' (%s) to entity field (%s)",
+						srcFieldType.Name, srcElemValue.Type(), dstField.Type())
+				}
+			}
+		} // Ignore fields in DTO that are nil pointers or not pointers
+	}
+	return nil
 }

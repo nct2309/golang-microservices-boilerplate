@@ -555,6 +555,7 @@ type UpdateUserRequest struct {
 	// Fields corresponding to schema.UserUpdateDTO (using wrappers for optionality)
 	Username *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=username,proto3,oneof" json:"username,omitempty"`
 	Email    *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=email,proto3,oneof" json:"email,omitempty"`
+	Password *wrapperspb.StringValue `protobuf:"bytes,12,opt,name=password,proto3,oneof" json:"password,omitempty"`
 	// Password updates might need a separate, dedicated RPC for security
 	FirstName     *wrapperspb.StringValue `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3,oneof" json:"first_name,omitempty"`
 	LastName      *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3,oneof" json:"last_name,omitempty"`
@@ -615,6 +616,13 @@ func (x *UpdateUserRequest) GetUsername() *wrapperspb.StringValue {
 func (x *UpdateUserRequest) GetEmail() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Email
+	}
+	return nil
+}
+
+func (x *UpdateUserRequest) GetPassword() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Password
 	}
 	return nil
 }
@@ -967,16 +975,18 @@ type UpdateUserItem struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Reuse optional fields from UpdateUserRequest (excluding id)
-	Username      *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=username,proto3,oneof" json:"username,omitempty"`                        // Corrected escaping
-	Email         *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=email,proto3,oneof" json:"email,omitempty"`                              // Corrected escaping
-	FirstName     *wrapperspb.StringValue `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3,oneof" json:"first_name,omitempty"`     // Corrected escaping
-	LastName      *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3,oneof" json:"last_name,omitempty"`        // Corrected escaping
-	Role          *wrapperspb.StringValue `protobuf:"bytes,6,opt,name=role,proto3,oneof" json:"role,omitempty"`                                // Corrected escaping
-	IsActive      *wrapperspb.BoolValue   `protobuf:"bytes,7,opt,name=is_active,json=isActive,proto3,oneof" json:"is_active,omitempty"`        // Corrected escaping (bool doesn't need quotes)
-	Phone         *wrapperspb.StringValue `protobuf:"bytes,8,opt,name=phone,proto3,oneof" json:"phone,omitempty"`                              // Corrected escaping
-	Address       *wrapperspb.StringValue `protobuf:"bytes,9,opt,name=address,proto3,oneof" json:"address,omitempty"`                          // Corrected escaping
-	Age           *wrapperspb.Int32Value  `protobuf:"bytes,10,opt,name=age,proto3,oneof" json:"age,omitempty"`                                 // Corrected escaping (number doesn't need quotes)
-	ProfilePic    *wrapperspb.StringValue `protobuf:"bytes,11,opt,name=profile_pic,json=profilePic,proto3,oneof" json:"profile_pic,omitempty"` // Corrected escaping
+	Username   *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=username,proto3,oneof" json:"username,omitempty"`                        // Corrected escaping
+	Email      *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=email,proto3,oneof" json:"email,omitempty"`                              // Corrected escaping
+	FirstName  *wrapperspb.StringValue `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3,oneof" json:"first_name,omitempty"`     // Corrected escaping
+	LastName   *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3,oneof" json:"last_name,omitempty"`        // Corrected escaping
+	Role       *wrapperspb.StringValue `protobuf:"bytes,6,opt,name=role,proto3,oneof" json:"role,omitempty"`                                // Corrected escaping
+	IsActive   *wrapperspb.BoolValue   `protobuf:"bytes,7,opt,name=is_active,json=isActive,proto3,oneof" json:"is_active,omitempty"`        // Corrected escaping (bool doesn't need quotes)
+	Phone      *wrapperspb.StringValue `protobuf:"bytes,8,opt,name=phone,proto3,oneof" json:"phone,omitempty"`                              // Corrected escaping
+	Address    *wrapperspb.StringValue `protobuf:"bytes,9,opt,name=address,proto3,oneof" json:"address,omitempty"`                          // Corrected escaping
+	Age        *wrapperspb.Int32Value  `protobuf:"bytes,10,opt,name=age,proto3,oneof" json:"age,omitempty"`                                 // Corrected escaping (number doesn't need quotes)
+	ProfilePic *wrapperspb.StringValue `protobuf:"bytes,11,opt,name=profile_pic,json=profilePic,proto3,oneof" json:"profile_pic,omitempty"` // Corrected escaping
+	// Add optional password field
+	Password      *wrapperspb.StringValue `protobuf:"bytes,12,opt,name=password,proto3,oneof" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1084,6 +1094,13 @@ func (x *UpdateUserItem) GetAge() *wrapperspb.Int32Value {
 func (x *UpdateUserItem) GetProfilePic() *wrapperspb.StringValue {
 	if x != nil {
 		return x.ProfilePic
+	}
+	return nil
+}
+
+func (x *UpdateUserItem) GetPassword() *wrapperspb.StringValue {
+	if x != nil {
+		return x.Password
 	}
 	return nil
 }
@@ -1563,27 +1580,29 @@ const file_proto_user_service_user_proto_rawDesc = "" +
 	"\x11ListUsersResponse\x12'\n" +
 	"\x05users\x18\x01 \x03(\v2\x11.userservice.UserR\x05users\x12=\n" +
 	"\x0fpagination_info\x18\x02 \x01(\v2\x14.core.PaginationInfoR\x0epaginationInfo:L\x92AI\n" +
-	"G*\x13List Users Response20A paginated list of users matching the criteria.\"\xc6\n" +
-	"\n" +
+	"G*\x13List Users Response20A paginated list of users matching the criteria.\"\xa7\f\n" +
 	"\x11UpdateUserRequest\x12\\\n" +
 	"\x02id\x18\x01 \x01(\tBL\x92AI2\x1fThe UUID of the user to update.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"R\x02id\x12c\n" +
 	"\busername\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueB$\x92A!2\rNew username.J\x10\"johndoeupdated\"H\x00R\busername\x88\x01\x01\x12p\n" +
-	"\x05email\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueB7\x92A42\x12New email address.J\x1e\"john.doe.updated@example.com\"H\x01R\x05email\x88\x01\x01\x12b\n" +
+	"\x05email\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueB7\x92A42\x12New email address.J\x1e\"john.doe.updated@example.com\"H\x01R\x05email\x88\x01\x01\x12\xd1\x01\n" +
+	"\bpassword\x18\f \x01(\v2\x1c.google.protobuf.StringValueB\x91\x01\x92A\x8d\x012jNew password (min 8 characters). Use a dedicated endpoint for password changes if more security is needed.J\x14\"NewSecureP@ssw0rd!\"\xa2\x02\bpasswordH\x02R\bpassword\x88\x01\x01\x12b\n" +
 	"\n" +
 	"first_name\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueB \x92A\x1d2\x0fNew first name.J\n" +
-	"\"Jonathan\"H\x02R\tfirstName\x88\x01\x01\x12Z\n" +
-	"\tlast_name\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueB\x1a\x92A\x172\x0eNew last name.J\x05\"Doe\"H\x03R\blastName\x88\x01\x01\x12P\n" +
-	"\x04role\x18\x06 \x01(\v2\x1c.google.protobuf.StringValueB\x19\x92A\x162\tNew role.J\t\"manager\"H\x04R\x04role\x88\x01\x01\x12_\n" +
-	"\tis_active\x18\a \x01(\v2\x1a.google.protobuf.BoolValueB!\x92A\x1e2\x15Update active status.J\x05falseH\x05R\bisActive\x88\x01\x01\x12^\n" +
-	"\x05phone\x18\b \x01(\v2\x1c.google.protobuf.StringValueB%\x92A\"2\x11New phone number.J\r\"+1122334455\"H\x06R\x05phone\x88\x01\x01\x12i\n" +
-	"\aaddress\x18\t \x01(\v2\x1c.google.protobuf.StringValueB,\x92A)2\fNew address.J\x19\"789 Pine Ln, Otherville\"H\aR\aaddress\x88\x01\x01\x12E\n" +
+	"\"Jonathan\"H\x03R\tfirstName\x88\x01\x01\x12Z\n" +
+	"\tlast_name\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueB\x1a\x92A\x172\x0eNew last name.J\x05\"Doe\"H\x04R\blastName\x88\x01\x01\x12P\n" +
+	"\x04role\x18\x06 \x01(\v2\x1c.google.protobuf.StringValueB\x19\x92A\x162\tNew role.J\t\"manager\"H\x05R\x04role\x88\x01\x01\x12_\n" +
+	"\tis_active\x18\a \x01(\v2\x1a.google.protobuf.BoolValueB!\x92A\x1e2\x15Update active status.J\x05falseH\x06R\bisActive\x88\x01\x01\x12^\n" +
+	"\x05phone\x18\b \x01(\v2\x1c.google.protobuf.StringValueB%\x92A\"2\x11New phone number.J\r\"+1122334455\"H\aR\x05phone\x88\x01\x01\x12i\n" +
+	"\aaddress\x18\t \x01(\v2\x1c.google.protobuf.StringValueB,\x92A)2\fNew address.J\x19\"789 Pine Ln, Otherville\"H\bR\aaddress\x88\x01\x01\x12E\n" +
 	"\x03age\x18\n" +
-	" \x01(\v2\x1b.google.protobuf.Int32ValueB\x11\x92A\x0e2\bNew age.J\x0231H\bR\x03age\x88\x01\x01\x12\x90\x01\n" +
-	"\vprofile_pic\x18\v \x01(\v2\x1c.google.protobuf.StringValueBL\x92AI2\x18New profile picture URL.J-\"https://example.com/profiles/johndoe_v2.jpg\"H\tR\n" +
+	" \x01(\v2\x1b.google.protobuf.Int32ValueB\x11\x92A\x0e2\bNew age.J\x0231H\tR\x03age\x88\x01\x01\x12\x90\x01\n" +
+	"\vprofile_pic\x18\v \x01(\v2\x1c.google.protobuf.StringValueBL\x92AI2\x18New profile picture URL.J-\"https://example.com/profiles/johndoe_v2.jpg\"H\n" +
+	"R\n" +
 	"profilePic\x88\x01\x01:k\x92Ah\n" +
 	"f*\x13Update User Request2JData for updating an existing user. Include only the fields to be changed.\xd2\x01\x02idB\v\n" +
 	"\t_usernameB\b\n" +
-	"\x06_emailB\r\n" +
+	"\x06_emailB\v\n" +
+	"\t_passwordB\r\n" +
 	"\v_first_nameB\f\n" +
 	"\n" +
 	"_last_nameB\a\n" +
@@ -1615,8 +1634,7 @@ const file_proto_user_service_user_proto_rawDesc = "" +
 	"S*\x1bCreate Users Request (Bulk)24A list of user creation requests for bulk insertion.\"\x9e\x01\n" +
 	"\x13CreateUsersResponse\x12'\n" +
 	"\x05users\x18\x01 \x03(\v2\x11.userservice.UserR\x05users:^\x92A[\n" +
-	"Y*\x1cCreate Users Response (Bulk)29A list containing the details of the newly created users.\"\xcb\n" +
-	"\n" +
+	"Y*\x1cCreate Users Response (Bulk)29A list containing the details of the newly created users.\"\x9c\f\n" +
 	"\x0eUpdateUserItem\x12\\\n" +
 	"\x02id\x18\x01 \x01(\tBL\x92AI2\x1fThe UUID of the user to update.J&\"a1b2c3d4-e5f6-7890-1234-567890abcdef\"R\x02id\x12d\n" +
 	"\busername\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueB%\x92A\"2\rNew username.J\x11\"updatedusername\"H\x00R\busername\x88\x01\x01\x12m\n" +
@@ -1631,7 +1649,9 @@ const file_proto_user_service_user_proto_rawDesc = "" +
 	"\x03age\x18\n" +
 	" \x01(\v2\x1b.google.protobuf.Int32ValueB\x11\x92A\x0e2\bNew age.J\x0240H\bR\x03age\x88\x01\x01\x12\x8d\x01\n" +
 	"\vprofile_pic\x18\v \x01(\v2\x1c.google.protobuf.StringValueBI\x92AF2\x18New profile picture URL.J*\"https://example.com/profiles/updated.jpg\"H\tR\n" +
-	"profilePic\x88\x01\x01:n\x92Ak\n" +
+	"profilePic\x88\x01\x01\x12\xc1\x01\n" +
+	"\bpassword\x18\f \x01(\v2\x1c.google.protobuf.StringValueB\x81\x01\x92A~2ZNew password (min 8 characters). Consider security implications for bulk password updates.J\x15\"BulkUpdateP@ssw0rd!\"\xa2\x02\bpasswordH\n" +
+	"R\bpassword\x88\x01\x01:n\x92Ak\n" +
 	"i*\x10Update User Item2PSpecifies the ID and the fields to update for a single user in a bulk operation.\xd2\x01\x02idB\v\n" +
 	"\t_usernameB\b\n" +
 	"\x06_emailB\r\n" +
@@ -1645,7 +1665,8 @@ const file_proto_user_service_user_proto_rawDesc = "" +
 	"\n" +
 	"\b_addressB\x06\n" +
 	"\x04_ageB\x0e\n" +
-	"\f_profile_pic\"\x89\x02\n" +
+	"\f_profile_picB\v\n" +
+	"\t_password\"\x89\x02\n" +
 	"\x12UpdateUsersRequest\x12\x84\x01\n" +
 	"\x05items\x18\x01 \x03(\v2\x1b.userservice.UpdateUserItemBQ\x92AN2LList of user updates. Each item must contain an ID and the fields to modify.R\x05items:l\x92Ai\n" +
 	"g*\x1bUpdate Users Request (Bulk)2HA list of users to update, each specifying an ID and the data to change.\"|\n" +
@@ -1773,59 +1794,61 @@ var file_proto_user_service_user_proto_depIdxs = []int32{
 	25, // 8: userservice.ListUsersResponse.pagination_info:type_name -> core.PaginationInfo
 	26, // 9: userservice.UpdateUserRequest.username:type_name -> google.protobuf.StringValue
 	26, // 10: userservice.UpdateUserRequest.email:type_name -> google.protobuf.StringValue
-	26, // 11: userservice.UpdateUserRequest.first_name:type_name -> google.protobuf.StringValue
-	26, // 12: userservice.UpdateUserRequest.last_name:type_name -> google.protobuf.StringValue
-	26, // 13: userservice.UpdateUserRequest.role:type_name -> google.protobuf.StringValue
-	27, // 14: userservice.UpdateUserRequest.is_active:type_name -> google.protobuf.BoolValue
-	26, // 15: userservice.UpdateUserRequest.phone:type_name -> google.protobuf.StringValue
-	26, // 16: userservice.UpdateUserRequest.address:type_name -> google.protobuf.StringValue
-	28, // 17: userservice.UpdateUserRequest.age:type_name -> google.protobuf.Int32Value
-	26, // 18: userservice.UpdateUserRequest.profile_pic:type_name -> google.protobuf.StringValue
-	0,  // 19: userservice.UpdateUserResponse.user:type_name -> userservice.User
-	24, // 20: userservice.FindUsersWithFilterRequest.options:type_name -> core.FilterOptions
-	0,  // 21: userservice.FindUsersWithFilterResponse.users:type_name -> userservice.User
-	25, // 22: userservice.FindUsersWithFilterResponse.pagination_info:type_name -> core.PaginationInfo
-	1,  // 23: userservice.CreateUsersRequest.users:type_name -> userservice.CreateUserRequest
-	0,  // 24: userservice.CreateUsersResponse.users:type_name -> userservice.User
-	26, // 25: userservice.UpdateUserItem.username:type_name -> google.protobuf.StringValue
-	26, // 26: userservice.UpdateUserItem.email:type_name -> google.protobuf.StringValue
-	26, // 27: userservice.UpdateUserItem.first_name:type_name -> google.protobuf.StringValue
-	26, // 28: userservice.UpdateUserItem.last_name:type_name -> google.protobuf.StringValue
-	26, // 29: userservice.UpdateUserItem.role:type_name -> google.protobuf.StringValue
-	27, // 30: userservice.UpdateUserItem.is_active:type_name -> google.protobuf.BoolValue
-	26, // 31: userservice.UpdateUserItem.phone:type_name -> google.protobuf.StringValue
-	26, // 32: userservice.UpdateUserItem.address:type_name -> google.protobuf.StringValue
-	28, // 33: userservice.UpdateUserItem.age:type_name -> google.protobuf.Int32Value
-	26, // 34: userservice.UpdateUserItem.profile_pic:type_name -> google.protobuf.StringValue
-	14, // 35: userservice.UpdateUsersRequest.items:type_name -> userservice.UpdateUserItem
-	0,  // 36: userservice.LoginResponse.user:type_name -> userservice.User
-	1,  // 37: userservice.UserService.Create:input_type -> userservice.CreateUserRequest
-	3,  // 38: userservice.UserService.GetByID:input_type -> userservice.GetUserByIDRequest
-	5,  // 39: userservice.UserService.List:input_type -> userservice.ListUsersRequest
-	7,  // 40: userservice.UserService.Update:input_type -> userservice.UpdateUserRequest
-	9,  // 41: userservice.UserService.Delete:input_type -> userservice.DeleteUserRequest
-	10, // 42: userservice.UserService.FindWithFilter:input_type -> userservice.FindUsersWithFilterRequest
-	12, // 43: userservice.UserService.CreateMany:input_type -> userservice.CreateUsersRequest
-	15, // 44: userservice.UserService.UpdateMany:input_type -> userservice.UpdateUsersRequest
-	17, // 45: userservice.UserService.DeleteMany:input_type -> userservice.DeleteUsersRequest
-	19, // 46: userservice.UserService.Login:input_type -> userservice.LoginRequest
-	21, // 47: userservice.UserService.Refresh:input_type -> userservice.RefreshRequest
-	2,  // 48: userservice.UserService.Create:output_type -> userservice.CreateUserResponse
-	4,  // 49: userservice.UserService.GetByID:output_type -> userservice.GetUserByIDResponse
-	6,  // 50: userservice.UserService.List:output_type -> userservice.ListUsersResponse
-	8,  // 51: userservice.UserService.Update:output_type -> userservice.UpdateUserResponse
-	29, // 52: userservice.UserService.Delete:output_type -> google.protobuf.Empty
-	11, // 53: userservice.UserService.FindWithFilter:output_type -> userservice.FindUsersWithFilterResponse
-	13, // 54: userservice.UserService.CreateMany:output_type -> userservice.CreateUsersResponse
-	29, // 55: userservice.UserService.UpdateMany:output_type -> google.protobuf.Empty
-	29, // 56: userservice.UserService.DeleteMany:output_type -> google.protobuf.Empty
-	20, // 57: userservice.UserService.Login:output_type -> userservice.LoginResponse
-	22, // 58: userservice.UserService.Refresh:output_type -> userservice.RefreshResponse
-	48, // [48:59] is the sub-list for method output_type
-	37, // [37:48] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	26, // 11: userservice.UpdateUserRequest.password:type_name -> google.protobuf.StringValue
+	26, // 12: userservice.UpdateUserRequest.first_name:type_name -> google.protobuf.StringValue
+	26, // 13: userservice.UpdateUserRequest.last_name:type_name -> google.protobuf.StringValue
+	26, // 14: userservice.UpdateUserRequest.role:type_name -> google.protobuf.StringValue
+	27, // 15: userservice.UpdateUserRequest.is_active:type_name -> google.protobuf.BoolValue
+	26, // 16: userservice.UpdateUserRequest.phone:type_name -> google.protobuf.StringValue
+	26, // 17: userservice.UpdateUserRequest.address:type_name -> google.protobuf.StringValue
+	28, // 18: userservice.UpdateUserRequest.age:type_name -> google.protobuf.Int32Value
+	26, // 19: userservice.UpdateUserRequest.profile_pic:type_name -> google.protobuf.StringValue
+	0,  // 20: userservice.UpdateUserResponse.user:type_name -> userservice.User
+	24, // 21: userservice.FindUsersWithFilterRequest.options:type_name -> core.FilterOptions
+	0,  // 22: userservice.FindUsersWithFilterResponse.users:type_name -> userservice.User
+	25, // 23: userservice.FindUsersWithFilterResponse.pagination_info:type_name -> core.PaginationInfo
+	1,  // 24: userservice.CreateUsersRequest.users:type_name -> userservice.CreateUserRequest
+	0,  // 25: userservice.CreateUsersResponse.users:type_name -> userservice.User
+	26, // 26: userservice.UpdateUserItem.username:type_name -> google.protobuf.StringValue
+	26, // 27: userservice.UpdateUserItem.email:type_name -> google.protobuf.StringValue
+	26, // 28: userservice.UpdateUserItem.first_name:type_name -> google.protobuf.StringValue
+	26, // 29: userservice.UpdateUserItem.last_name:type_name -> google.protobuf.StringValue
+	26, // 30: userservice.UpdateUserItem.role:type_name -> google.protobuf.StringValue
+	27, // 31: userservice.UpdateUserItem.is_active:type_name -> google.protobuf.BoolValue
+	26, // 32: userservice.UpdateUserItem.phone:type_name -> google.protobuf.StringValue
+	26, // 33: userservice.UpdateUserItem.address:type_name -> google.protobuf.StringValue
+	28, // 34: userservice.UpdateUserItem.age:type_name -> google.protobuf.Int32Value
+	26, // 35: userservice.UpdateUserItem.profile_pic:type_name -> google.protobuf.StringValue
+	26, // 36: userservice.UpdateUserItem.password:type_name -> google.protobuf.StringValue
+	14, // 37: userservice.UpdateUsersRequest.items:type_name -> userservice.UpdateUserItem
+	0,  // 38: userservice.LoginResponse.user:type_name -> userservice.User
+	1,  // 39: userservice.UserService.Create:input_type -> userservice.CreateUserRequest
+	3,  // 40: userservice.UserService.GetByID:input_type -> userservice.GetUserByIDRequest
+	5,  // 41: userservice.UserService.List:input_type -> userservice.ListUsersRequest
+	7,  // 42: userservice.UserService.Update:input_type -> userservice.UpdateUserRequest
+	9,  // 43: userservice.UserService.Delete:input_type -> userservice.DeleteUserRequest
+	10, // 44: userservice.UserService.FindWithFilter:input_type -> userservice.FindUsersWithFilterRequest
+	12, // 45: userservice.UserService.CreateMany:input_type -> userservice.CreateUsersRequest
+	15, // 46: userservice.UserService.UpdateMany:input_type -> userservice.UpdateUsersRequest
+	17, // 47: userservice.UserService.DeleteMany:input_type -> userservice.DeleteUsersRequest
+	19, // 48: userservice.UserService.Login:input_type -> userservice.LoginRequest
+	21, // 49: userservice.UserService.Refresh:input_type -> userservice.RefreshRequest
+	2,  // 50: userservice.UserService.Create:output_type -> userservice.CreateUserResponse
+	4,  // 51: userservice.UserService.GetByID:output_type -> userservice.GetUserByIDResponse
+	6,  // 52: userservice.UserService.List:output_type -> userservice.ListUsersResponse
+	8,  // 53: userservice.UserService.Update:output_type -> userservice.UpdateUserResponse
+	29, // 54: userservice.UserService.Delete:output_type -> google.protobuf.Empty
+	11, // 55: userservice.UserService.FindWithFilter:output_type -> userservice.FindUsersWithFilterResponse
+	13, // 56: userservice.UserService.CreateMany:output_type -> userservice.CreateUsersResponse
+	29, // 57: userservice.UserService.UpdateMany:output_type -> google.protobuf.Empty
+	29, // 58: userservice.UserService.DeleteMany:output_type -> google.protobuf.Empty
+	20, // 59: userservice.UserService.Login:output_type -> userservice.LoginResponse
+	22, // 60: userservice.UserService.Refresh:output_type -> userservice.RefreshResponse
+	50, // [50:61] is the sub-list for method output_type
+	39, // [39:50] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_proto_user_service_user_proto_init() }

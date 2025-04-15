@@ -8,7 +8,7 @@ RUN go mod download
 COPY . .
 
 # This path should match your project structure
-RUN CGO_ENABLED=0 GOOS=linux go build -o user-service ./services/user-service/cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o user-service ./services/user-service/cmd/
 
 FROM alpine:latest
 

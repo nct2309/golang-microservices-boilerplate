@@ -261,6 +261,11 @@ message UpdateUserRequest {
     description: "New email address.";
     example: "\"john.doe.updated@example.com\""; // JSON string example for wrapper value
   }];
+  optional google.protobuf.StringValue password = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New password (min 8 characters). Use a dedicated endpoint for password changes if more security is needed.";
+    format: "password";
+    example: "\"NewSecureP@ssw0rd!\""; // JSON string example for wrapper value
+  }];
   // Password updates might need a separate, dedicated RPC for security
   optional google.protobuf.StringValue first_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "New first name.";
@@ -433,6 +438,12 @@ message UpdateUserItem {
     description: "New profile picture URL."; 
     example: "\"https://example.com/profiles/updated.jpg\"";
   }]; // Corrected escaping
+  // Add optional password field
+  optional google.protobuf.StringValue password = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "New password (min 8 characters). Consider security implications for bulk password updates.";
+    format: "password";
+    example: "\"BulkUpdateP@ssw0rd!\""; // JSON string example for wrapper value
+  }];
 }
 
 // Request for updating multiple users based on a list of items

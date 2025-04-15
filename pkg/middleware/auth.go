@@ -3,7 +3,9 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"golang-microservices-boilerplate/pkg/utils"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -30,8 +32,8 @@ type JWTConfig struct {
 
 // DefaultJWTConfig is the default JWT auth configuration
 var DefaultJWTConfig = JWTConfig{
-	AccessTokenSecret:  "your-access-secret-key",  // CHANGE THIS!
-	RefreshTokenSecret: "your-refresh-secret-key", // CHANGE THIS!
+	AccessTokenSecret:  utils.GetEnv("ACCESS_TOKEN_SECRET", "access_token_secret_wqim"),
+	RefreshTokenSecret: utils.GetEnv("REFRESH_TOKEN_SECRET", "refresh_token_secret_KMT"), // CHANGE THIS!
 	TokenLookup:        "header:Authorization",
 	TokenHeadName:      "Bearer",
 	ContextKey:         "user",
@@ -53,8 +55,8 @@ func GenerateToken(customClaims map[string]interface{}, expirationTime time.Dura
 	claims := UserClaims{
 		Data: customClaims,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   subject,         // Use 'sub' claim for User ID extracted from map
-			Issuer:    "your-app-name", // Consider making this configurable
+			Subject:   subject,                             // Use 'sub' claim for User ID extracted from map
+			Issuer:    utils.GetEnv("APP_NAME", "wqimKMT"), // Consider making this configurable
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expirationTime)),
 		},
@@ -237,7 +239,7 @@ func GetClaims(c *fiber.Ctx, contextKey ...string) *UserClaims {
 }
 
 // RequireRole middleware ensures the authenticated user has the required role
-func RequireRole(role string, contextKey ...string) fiber.Handler {
+func RequireRole(roles []string, contextKey ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		claims := GetClaims(c, contextKey...)
 		if claims == nil {
@@ -251,11 +253,18 @@ func RequireRole(role string, contextKey ...string) fiber.Handler {
 		if !ok {
 			// Role claim missing or not a string
 			return c.Status(http.StatusForbidden).JSON(fiber.Map{
-				"error": fmt.Sprintf("role claim missing or invalid format in token"),
+				"error": fmt.Sprintln("role claim missing or invalid format in token"),
 			})
 		}
 
-		if roleClaim != role {
+		// lowercase the roleClaim
+		roleClaim = strings.ToLower(roleClaim)
+		// lowercase the roles
+		for i, role := range roles {
+			roles[i] = strings.ToLower(role)
+		}
+
+		if !slices.Contains(roles, roleClaim) {
 			return c.Status(http.StatusForbidden).JSON(fiber.Map{
 				"error": "insufficient permissions",
 			})

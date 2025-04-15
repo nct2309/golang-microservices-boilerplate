@@ -19,7 +19,6 @@ import (
 
 	"golang-microservices-boilerplate/pkg/core/logger"
 	"golang-microservices-boilerplate/pkg/middleware"
-	user_pb "golang-microservices-boilerplate/proto/user-service"
 	"golang-microservices-boilerplate/services/api-gateway/internal/domain"
 )
 
@@ -119,6 +118,8 @@ func NewGateway(
 	g.app.Use(cors.New())                    // CORS
 	g.app.Use(middleware.LoggerMiddleware()) // Call middleware without logger arg
 
+	setupAuthMiddleware(g.app, g.logger)
+
 	// Mount the gRPC-Gateway mux
 	g.app.Use("/api", adaptor.HTTPHandler(g.gwMux))
 
@@ -180,40 +181,6 @@ func (g *Gateway) Shutdown(ctx context.Context) error {
 	}
 
 	g.logger.Info("Gateway shutdown complete")
-	return nil
-}
-
-// setupHandlers registers gRPC-Gateway handlers for all services
-func (g *Gateway) setupHandlers() error {
-	services, err := g.discovery.GetAllServices()
-	if err != nil {
-		return fmt.Errorf("failed to get services: %w", err)
-	}
-
-	for _, service := range services {
-		switch strings.ToLower(service.Name) {
-		case "user", "user-service":
-			if err := g.setupUserServiceHandlers(service); err != nil {
-				return err
-			}
-		// Add cases for other services here
-		default:
-			g.logger.Warn("Unknown service discovered, skipping handler setup", "service_name", service.Name, "endpoint", service.Endpoint)
-		}
-	}
-
-	return nil
-}
-
-// setupUserServiceHandlers registers handlers for the user service
-func (g *Gateway) setupUserServiceHandlers(service domain.Service) error {
-	err := user_pb.RegisterUserServiceHandlerFromEndpoint(g.ctx, g.gwMux, service.Endpoint, g.opts)
-	if err != nil {
-		g.logger.Error("Failed to register user service handler from endpoint", "endpoint", service.Endpoint, "error", err)
-		return fmt.Errorf("failed to register user service handler from endpoint %s: %w", service.Endpoint, err)
-	}
-
-	g.logger.Info("Registered gRPC-Gateway handlers via endpoint", "service", "user-service", "endpoint", service.Endpoint)
 	return nil
 }
 

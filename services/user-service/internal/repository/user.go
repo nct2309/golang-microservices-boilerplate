@@ -4,7 +4,7 @@ import (
 	"context"
 
 	core_repo "golang-microservices-boilerplate/pkg/core/repository"
-	"golang-microservices-boilerplate/services/user-service/internal/model/entity"
+	"golang-microservices-boilerplate/services/user-service/internal/entity"
 
 	"gorm.io/gorm"
 )

@@ -2,12 +2,10 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 
-	coreDTO "golang-microservices-boilerplate/pkg/core/dto"
 	"golang-microservices-boilerplate/pkg/core/entity"
 	"golang-microservices-boilerplate/pkg/core/logger"
 	"golang-microservices-boilerplate/pkg/core/repository"
@@ -15,74 +13,59 @@ import (
 )
 
 // BaseUseCase defines common operations for all use cases/services operating on entity pointers (*T)
-type BaseUseCase[T entity.Entity, CreateDTO any, UpdateDTO any] interface {
-	Create(ctx context.Context, dto CreateDTO) (*T, error)
+type BaseUseCase[T entity.Entity] interface {
+	Create(ctx context.Context, entity *T) error
 	GetByID(ctx context.Context, id uuid.UUID) (*T, error)
 	List(ctx context.Context, opts types.FilterOptions) (*types.PaginationResult[T], error)
-	Update(ctx context.Context, id uuid.UUID, dto UpdateDTO) (*T, error)
+	Update(ctx context.Context, entity *T) error
 	Delete(ctx context.Context, id uuid.UUID, hardDelete bool) error
 	FindWithFilter(ctx context.Context, filter map[string]interface{}, opts types.FilterOptions) (*types.PaginationResult[T], error)
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
 
 	// Bulk Operations
-	CreateMany(ctx context.Context, dtos []CreateDTO) ([]*T, error)
-	UpdateMany(ctx context.Context, updates map[uuid.UUID]UpdateDTO) error
+	CreateMany(ctx context.Context, entities []*T) error
+	UpdateMany(ctx context.Context, entities []*T) error
 	DeleteMany(ctx context.Context, ids []uuid.UUID, hardDelete bool) error
 }
 
 // BaseUseCaseImpl implements the BaseUseCase interface for entity pointers (*T)
-type BaseUseCaseImpl[T entity.Entity, CreateDTO any, UpdateDTO any] struct {
+type BaseUseCaseImpl[T entity.Entity] struct {
 	Repository repository.BaseRepository[T]
 	Logger     logger.Logger
 }
 
 // NewBaseUseCase creates a new use case implementation for entity pointers (*T)
-func NewBaseUseCase[T entity.Entity, CreateDTO any, UpdateDTO any](
+func NewBaseUseCase[T entity.Entity](
 	repository repository.BaseRepository[T],
 	logger logger.Logger,
-) *BaseUseCaseImpl[T, CreateDTO, UpdateDTO] {
-	return &BaseUseCaseImpl[T, CreateDTO, UpdateDTO]{
+) *BaseUseCaseImpl[T] {
+	return &BaseUseCaseImpl[T]{
 		Repository: repository,
 		Logger:     logger,
 	}
 }
 
-// Create processes a creation request using coreDTO functions
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) Create(ctx context.Context, dto CreateDTO) (*T, error) {
-	// Validate DTO using coreDTO.Validate
-	if err := coreDTO.Validate(dto); err != nil {
-		var validationErrs coreDTO.ValidationErrors
-		if errors.As(err, &validationErrs) {
-			uc.Logger.Warn("DTO validation failed", "errors", validationErrs.Error())
-			return nil, NewUseCaseError(ErrInvalidInput, validationErrs.Error())
-		}
-		uc.Logger.Error("Validation setup error", "error", err)
-		return nil, NewUseCaseError(ErrInternal, fmt.Sprintf("validation error: %v", err))
-	}
-
-	// Convert DTO to entity pointer using coreDTO.MapDTOToEntity
-	var entityPtr T // Declare entity of type T
-	if err := coreDTO.MapToEntity(dto, &entityPtr); err != nil {
-		uc.Logger.Error("Failed to map DTO to entity", "error", err)
-		return nil, NewUseCaseError(ErrInternal, "failed to process input data mapping")
-	}
+// Create processes a creation request using the provided entity pointer
+func (uc *BaseUseCaseImpl[T]) Create(ctx context.Context, entityPtr *T) error {
+	// Validation should now happen before calling this method, or rely on entity hooks (e.g., BeforeCreate)
+	// Mapping from external data (e.g., proto) should also happen before calling this method.
 
 	// Create entity in repository
-	if err := uc.Repository.Create(ctx, &entityPtr); err != nil {
-		uc.Logger.Error("Failed to create entity in repository", "error", err)
+	if err := uc.Repository.Create(ctx, entityPtr); err != nil {
+		uc.Logger.Error("Failed to create entity in repository", "entityType", fmt.Sprintf("%T", entityPtr), "error", err)
 		// Consider checking for specific DB errors (e.g., unique constraint)
-		return nil, err // Return original repository error
+		return err // Return original repository error
 	}
 
-	return &entityPtr, nil
+	// The entityPtr is modified in place by the repository (e.g., ID set)
+	return nil
 }
 
 // GetByID retrieves an entity by its ID
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) GetByID(ctx context.Context, id uuid.UUID) (*T, error) {
+func (uc *BaseUseCaseImpl[T]) GetByID(ctx context.Context, id uuid.UUID) (*T, error) {
 	entityPtr, err := uc.Repository.FindByID(ctx, id)
 	if err != nil {
-		// Specific handling for not found remains, but others are passed through
-		if err.Error() == "entity not found" { // Match error from repository
+		if err.Error() == "entity not found" { // Example error string check
 			return nil, NewUseCaseError(ErrNotFound, fmt.Sprintf("resource with ID %s not found", id))
 		}
 		uc.Logger.Error("Failed to get entity by ID", "id", id, "error", err)
@@ -92,7 +75,7 @@ func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) GetByID(ctx context.Context,
 }
 
 // List retrieves all entities with pagination
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) List(ctx context.Context, opts types.FilterOptions) (*types.PaginationResult[T], error) {
+func (uc *BaseUseCaseImpl[T]) List(ctx context.Context, opts types.FilterOptions) (*types.PaginationResult[T], error) {
 	result, err := uc.Repository.FindAll(ctx, opts)
 	if err != nil {
 		uc.Logger.Error("Failed to list entities", "error", err)
@@ -101,52 +84,45 @@ func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) List(ctx context.Context, op
 	return result, nil
 }
 
-// Update modifies an existing entity using coreDTO functions
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) Update(ctx context.Context, id uuid.UUID, dto UpdateDTO) (*T, error) {
-	// Validate DTO using coreDTO.Validate
-	if err := coreDTO.Validate(dto); err != nil {
-		var validationErrs coreDTO.ValidationErrors
-		if errors.As(err, &validationErrs) {
-			uc.Logger.Warn("Update DTO validation failed", "id", id, "errors", validationErrs.Error())
-			return nil, NewUseCaseError(ErrInvalidInput, validationErrs.Error())
-		}
-		uc.Logger.Error("Update validation setup error", "id", id, "error", err)
-		return nil, NewUseCaseError(ErrInternal, fmt.Sprintf("validation error: %v", err))
+// Update modifies an existing entity based on the provided entity pointer.
+func (uc *BaseUseCaseImpl[T]) Update(ctx context.Context, entityPtr *T) error {
+	// Validation and mapping should happen before calling this method, or rely on entity hooks (e.g., BeforeUpdate).
+	// The caller is responsible for providing the full entity state to be saved.
+
+	// Ensure the entity pointer is valid and has an ID before proceeding
+	var entityID uuid.UUID
+	if entityPtr == nil {
+		uc.Logger.Warn("Update called with nil entity pointer")
+		return NewUseCaseError(ErrInvalidInput, "cannot update nil entity")
+	}
+	entityID = (*entityPtr).GetID()
+	if entityID == uuid.Nil {
+		uc.Logger.Warn("Update called with entity having nil ID")
+		return NewUseCaseError(ErrInvalidInput, "cannot update entity with nil ID")
 	}
 
-	// Fetch the existing entity pointer
-	entityPtr, err := uc.Repository.FindByID(ctx, id)
-	if err != nil {
-		// Specific handling for not found remains
-		if err.Error() == "entity not found" {
-			return nil, NewUseCaseError(ErrNotFound, fmt.Sprintf("resource with ID %s not found for update", id))
-		}
-		uc.Logger.Error("Failed to get entity for update", "id", id, "error", err)
-		return nil, err // Return original repository error
-	}
-
-	// Apply updates from DTO to the existing entity pointer using coreDTO.MapDTOToEntity
-	if err := coreDTO.MapToEntity(dto, entityPtr); err != nil {
-		uc.Logger.Error("Failed to map update DTO to entity", "id", id, "error", err)
-		return nil, NewUseCaseError(ErrInternal, "failed to apply updates mapping") // Keep internal error for mapping issues
-	}
-
-	// Save the updated entity
+	// Save the updated entity using Update()
+	// Repository's Update should handle finding the record by ID from entityPtr and updating it.
 	if err := uc.Repository.Update(ctx, entityPtr); err != nil {
-		uc.Logger.Error("Failed to update entity in repository", "id", id, "error", err)
+		if err.Error() == "entity not found" { // Example check if repository.Update returns not found
+			uc.Logger.Warn("Attempted to update non-existent entity", "id", entityID.String())
+			return NewUseCaseError(ErrNotFound, fmt.Sprintf("resource with ID %s not found for update", entityID.String()))
+		}
+		uc.Logger.Error("Failed to update entity in repository", "id", entityID.String(), "error", err)
 		// Consider checking for specific DB errors
-		return nil, err // Return original repository error
+		return err // Return original repository error
 	}
 
-	return entityPtr, nil
+	// The entityPtr reflects the state after the update (if the repository modifies it)
+	return nil
 }
 
 // Delete soft-deletes or hard-deletes an entity based on the flag
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) Delete(ctx context.Context, id uuid.UUID, hardDelete bool) error {
+func (uc *BaseUseCaseImpl[T]) Delete(ctx context.Context, id uuid.UUID, hardDelete bool) error {
 	// Check if entity exists first to provide a NotFound error if it doesn't
 	_, err := uc.Repository.FindByID(ctx, id)
 	if err != nil {
-		if err.Error() == "entity not found" {
+		if err.Error() == "entity not found" { // Example error string check
 			return NewUseCaseError(ErrNotFound, fmt.Sprintf("resource with ID %s not found for deletion", id))
 		}
 		uc.Logger.Error("Failed to find entity for deletion", "id", id, "hardDelete", hardDelete, "error", err)
@@ -163,7 +139,7 @@ func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) Delete(ctx context.Context, 
 }
 
 // FindWithFilter retrieves entities with a filter and pagination
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) FindWithFilter(
+func (uc *BaseUseCaseImpl[T]) FindWithFilter(
 	ctx context.Context,
 	filter map[string]interface{},
 	opts types.FilterOptions,
@@ -177,7 +153,7 @@ func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) FindWithFilter(
 }
 
 // Count returns the count of entities matching the filter
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {
+func (uc *BaseUseCaseImpl[T]) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {
 	count, err := uc.Repository.Count(ctx, filter)
 	if err != nil {
 		uc.Logger.Error("Failed to count entities", "error", err)
@@ -188,75 +164,43 @@ func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) Count(ctx context.Context, f
 
 // --- Bulk Operations Implementation ---
 
-// CreateMany processes a bulk creation request using coreDTO functions
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) CreateMany(ctx context.Context, dtos []CreateDTO) ([]*T, error) {
-	if len(dtos) == 0 {
-		return []*T{}, nil
+// CreateMany processes a bulk creation request using the provided entity pointers
+func (uc *BaseUseCaseImpl[T]) CreateMany(ctx context.Context, entities []*T) error {
+	if len(entities) == 0 {
+		return nil
 	}
-
-	entities := make([]*T, 0, len(dtos))
-	for i, dto := range dtos {
-		// Validate DTO
-		if err := coreDTO.Validate(dto); err != nil {
-			// Simplified error handling for bulk, could collect all errors
-			return nil, NewUseCaseError(ErrInvalidInput, fmt.Sprintf("validation error for item %d: %v", i, err))
-		}
-
-		// Convert DTO to entity pointer
-		var entityPtr T
-		if err := coreDTO.MapToEntity(dto, &entityPtr); err != nil {
-			uc.Logger.Error("Failed to map DTO to entity for bulk create", "index", i, "error", err)
-			return nil, NewUseCaseError(ErrInternal, fmt.Sprintf("failed to process input data mapping for item %d", i))
-		}
-		entities = append(entities, &entityPtr)
-	}
+	// Validation should happen before calling, or rely on entity hooks.
 
 	// Create entities in repository
 	if err := uc.Repository.CreateMany(ctx, entities); err != nil {
-		uc.Logger.Error("Failed to bulk create entities", "error", err)
-		return nil, err // Return original repository error
+		uc.Logger.Error("Failed to bulk create entities", "count", len(entities), "error", err)
+		return err // Return original repository error
 	}
 
-	return entities, nil
+	// The pointers in the 'entities' slice are modified in place by the repository.
+	return nil
 }
 
-// UpdateMany processes a bulk update request.
-// It fetches each entity, validates/applies the DTO, and calls the repository's UpdateMany.
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) UpdateMany(ctx context.Context, updates map[uuid.UUID]UpdateDTO) error {
-	if len(updates) == 0 {
+// UpdateMany processes a bulk update request using the provided entity pointers.
+func (uc *BaseUseCaseImpl[T]) UpdateMany(ctx context.Context, entities []*T) error {
+	if len(entities) == 0 {
 		return nil // Nothing to update
 	}
-
-	updatedEntities := make([]*T, 0, len(updates))
-	for id, dto := range updates {
-		// Validate DTO
-		if err := coreDTO.Validate(dto); err != nil {
-			// Consider collecting all errors instead of returning on the first one
-			return NewUseCaseError(ErrInvalidInput, fmt.Sprintf("validation error for ID %s: %v", id, err))
+	// Validation should happen before calling, or rely on entity hooks.
+	// The caller provides the full state for each entity to be updated.
+	// Ensure entities are valid before passing them?
+	for i, entityPtr := range entities {
+		if entityPtr == nil || (*entityPtr).GetID() == uuid.Nil {
+			uc.Logger.Warn("UpdateMany called with nil entity or entity with nil ID", "index", i)
+			// Decide on error handling: return error immediately, collect errors, or skip invalid ones?
+			return NewUseCaseError(ErrInvalidInput, fmt.Sprintf("invalid entity at index %d for bulk update", i))
 		}
-
-		// Fetch the existing entity
-		entityPtr, err := uc.Repository.FindByID(ctx, id)
-		if err != nil {
-			if err.Error() == "entity not found" {
-				return NewUseCaseError(ErrNotFound, fmt.Sprintf("resource with ID %s not found for bulk update", id))
-			}
-			uc.Logger.Error("Failed to get entity for bulk update", "id", id, "error", err)
-			return err // Return original repository error
-		}
-
-		// Apply updates from DTO to the existing entity pointer
-		if err := coreDTO.MapToEntity(dto, entityPtr); err != nil {
-			uc.Logger.Error("Failed to map update DTO to entity for bulk update", "id", id, "error", err)
-			return NewUseCaseError(ErrInternal, fmt.Sprintf("failed to apply updates mapping for ID %s", id))
-		}
-
-		updatedEntities = append(updatedEntities, entityPtr)
 	}
 
 	// Call repository's UpdateMany with the prepared entities
-	if err := uc.Repository.UpdateMany(ctx, updatedEntities); err != nil {
-		uc.Logger.Error("Failed to bulk update entities in repository", "count", len(updatedEntities), "error", err)
+	if err := uc.Repository.UpdateMany(ctx, entities); err != nil {
+		uc.Logger.Error("Failed to bulk update entities in repository", "count", len(entities), "error", err)
+		// Consider how the repository signals errors for specific items (e.g., not found)
 		return err // Return original repository error
 	}
 
@@ -264,7 +208,7 @@ func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) UpdateMany(ctx context.Conte
 }
 
 // DeleteMany soft-deletes or hard-deletes entities matching the provided IDs.
-func (uc *BaseUseCaseImpl[T, CreateDTO, UpdateDTO]) DeleteMany(ctx context.Context, ids []uuid.UUID, hardDelete bool) error {
+func (uc *BaseUseCaseImpl[T]) DeleteMany(ctx context.Context, ids []uuid.UUID, hardDelete bool) error {
 	if len(ids) == 0 {
 		return nil // Nothing to delete
 	}
@@ -300,7 +244,7 @@ type UseCaseError struct {
 
 // Error returns the error message
 func (e *UseCaseError) Error() string {
-	return e.Message
+	return fmt.Sprintf("%s: %s", e.Type, e.Message)
 }
 
 // NewUseCaseError creates a new use case error
