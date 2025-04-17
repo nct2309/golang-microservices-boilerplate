@@ -34,20 +34,25 @@ delete-cluster:
 remove-image:
 	docker rmi api-gateway:latest
 	docker rmi user-service:latest
+	docker rmi water-quality-service:latest
+
 build-image:
 	docker build -t api-gateway:latest -f services/api-gateway/Dockerfile .
 	docker build -t user-service:latest -f services/user-service/Dockerfile .
+	docker build -t water-quality-service:latest -f services/water-quality-service/Dockerfile .
 
 image:	remove-image	build-image
 
 load-image:
 	kind load docker-image api-gateway:latest --name ride-sharing-cluster
 	kind load docker-image user-service:latest --name ride-sharing-cluster
+	kind load docker-image water-quality-service:latest --name ride-sharing-cluster
 
 apply-config:
 	kubectl apply -f k8s/common/ # Apply Namespace and RBAC
 	kubectl apply -f k8s/api-gateway/ # Apply ConfigMap, Deployment, Service, Ingress
 	kubectl apply -f k8s/user-service/ # Apply ConfigMap, Deployment, Service
+	kubectl apply -f k8s/water-quality-service/ # Apply ConfigMap, Deployment, Service
 
 .PHONY: describe-api
 describe-api:
@@ -57,6 +62,9 @@ describe-api:
 describe-user:
 	kubectl describe pod -n ride-sharing -l app=user-service
 
+.PHONY: describe-water-quality
+	kubectl describe pod -n ride-sharing -l app=water-quality-service
+
 .PHONY: api-logs
 api-logs:
 	kubectl logs -n ride-sharing -l app=api-gateway --tail=100
@@ -65,11 +73,15 @@ api-logs:
 user-logs:
 	kubectl logs -n ride-sharing -l app=user-service --tail=100
 
+.PHONY: water-quality-logs
+water-quality-logs:
+	kubectl logs -n ride-sharing -l app=water-quality-service --tail=100
+
 .PHONY: restart-deployments
 restart-deployments:
 	kubectl rollout restart deployment -n ride-sharing api-gateway
 	kubectl rollout restart deployment -n ride-sharing user-service
-
+	kubectl rollout restart deployment -n ride-sharing water-quality-service
 forward-api:
 	kubectl port-forward -n ride-sharing service/api-gateway 8081:8081
 
@@ -78,3 +90,8 @@ proto-gen:
 
 clear-docker-cache:
 	docker builder prune -f
+
+# move-out:
+# 	cp -r golang-microservices-boilerplate /mnt/c/Users/ASUS/Downloads
+# move-in:
+# 	cp -r /mnt/c/Users/ASUS/Downloads/golang-microservices-boilerplate .

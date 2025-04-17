@@ -42,8 +42,8 @@ type User struct {
 	LastName          string `json:"last_name,omitempty" gorm:"size:50;not null"`
 	// Use string for Role, restricted to known values.
 	// Ensure database schema uses a string type (e.g., VARCHAR).
-	Role        Role       `json:"role,omitempty" gorm:"size:10;not null"`   // Store role as string
-	IsActive    bool       `json:"is_active,omitempty" gorm:"default:false"` // Default new users to inactive
+	Role        Role       `json:"role,omitempty" gorm:"size:10;not null;check:chk_user_role,role IN ('admin', 'manager', 'officer')"` // Store role as string, Added CHECK constraint
+	IsActive    bool       `json:"is_active,omitempty" gorm:"default:true"`                                                            // Default new users to inactive
 	LastLoginAt *time.Time `json:"last_login_at,omitempty" gorm:"default:null"`
 	// Add other fields from proto if they belong in the core domain model
 	// Example: Phone, Address, ProfilePic, Age might or might not be core domain fields

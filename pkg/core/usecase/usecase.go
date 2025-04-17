@@ -23,8 +23,8 @@ type BaseUseCase[T entity.Entity] interface {
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
 
 	// Bulk Operations
-	CreateMany(ctx context.Context, entities []*T) error
-	UpdateMany(ctx context.Context, entities []*T) error
+	CreateMany(ctx context.Context, entities []*T) ([]*T, error)
+	UpdateMany(ctx context.Context, entities []*T) ([]*T, error)
 	DeleteMany(ctx context.Context, ids []uuid.UUID, hardDelete bool) error
 }
 
@@ -165,46 +165,47 @@ func (uc *BaseUseCaseImpl[T]) Count(ctx context.Context, filter map[string]inter
 // --- Bulk Operations Implementation ---
 
 // CreateMany processes a bulk creation request using the provided entity pointers
-func (uc *BaseUseCaseImpl[T]) CreateMany(ctx context.Context, entities []*T) error {
+// Returns the created entities (with IDs populated)
+func (uc *BaseUseCaseImpl[T]) CreateMany(ctx context.Context, entities []*T) ([]*T, error) {
 	if len(entities) == 0 {
-		return nil
+		return entities, nil
 	}
 	// Validation should happen before calling, or rely on entity hooks.
 
-	// Create entities in repository
-	if err := uc.Repository.CreateMany(ctx, entities); err != nil {
+	// Create entities in repository, capture the returned slice
+	createdEntities, err := uc.Repository.CreateMany(ctx, entities)
+	if err != nil {
 		uc.Logger.Error("Failed to bulk create entities", "count", len(entities), "error", err)
-		return err // Return original repository error
+		return nil, err // Return nil slice on error
 	}
 
-	// The pointers in the 'entities' slice are modified in place by the repository.
-	return nil
+	// Return the entities populated by the repository
+	return createdEntities, nil
 }
 
 // UpdateMany processes a bulk update request using the provided entity pointers.
-func (uc *BaseUseCaseImpl[T]) UpdateMany(ctx context.Context, entities []*T) error {
+// Returns the fully updated entities fetched from the repository after the update.
+func (uc *BaseUseCaseImpl[T]) UpdateMany(ctx context.Context, entities []*T) ([]*T, error) {
 	if len(entities) == 0 {
-		return nil // Nothing to update
+		return entities, nil // Nothing to update
 	}
 	// Validation should happen before calling, or rely on entity hooks.
-	// The caller provides the full state for each entity to be updated.
 	// Ensure entities are valid before passing them?
 	for i, entityPtr := range entities {
 		if entityPtr == nil || (*entityPtr).GetID() == uuid.Nil {
 			uc.Logger.Warn("UpdateMany called with nil entity or entity with nil ID", "index", i)
-			// Decide on error handling: return error immediately, collect errors, or skip invalid ones?
-			return NewUseCaseError(ErrInvalidInput, fmt.Sprintf("invalid entity at index %d for bulk update", i))
+			return nil, NewUseCaseError(ErrInvalidInput, fmt.Sprintf("invalid entity at index %d for bulk update", i))
 		}
 	}
 
-	// Call repository's UpdateMany with the prepared entities
-	if err := uc.Repository.UpdateMany(ctx, entities); err != nil {
+	// Call repository's UpdateMany, capture the returned updated entities
+	updatedEntities, err := uc.Repository.UpdateMany(ctx, entities)
+	if err != nil {
 		uc.Logger.Error("Failed to bulk update entities in repository", "count", len(entities), "error", err)
-		// Consider how the repository signals errors for specific items (e.g., not found)
-		return err // Return original repository error
+		return nil, err // Return nil slice on error
 	}
 
-	return nil
+	return updatedEntities, nil
 }
 
 // DeleteMany soft-deletes or hard-deletes entities matching the provided IDs.

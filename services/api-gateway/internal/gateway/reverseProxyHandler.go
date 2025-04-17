@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	user_pb "golang-microservices-boilerplate/proto/user-service"
+	water_quality_pb "golang-microservices-boilerplate/proto/water-quality-service"
 	"golang-microservices-boilerplate/services/api-gateway/internal/domain"
 )
 
@@ -26,6 +27,8 @@ func (g *Gateway) setupHandlers() error {
 		switch strings.ToLower(service.Name) {
 		case "user", "user-service":
 			setupErr = g.setupUserServiceHandlers(service)
+		case "water-quality", "water-quality-service":
+			setupErr = g.setupWaterQualityServiceHandlers(service)
 		// case "patient", "patient-service":
 		// 	setupErr = g.setupPatientServiceHandlers(service)
 		// case "appointment", "appointment-service":
@@ -71,32 +74,32 @@ func (g *Gateway) setupUserServiceHandlers(service domain.Service) error {
 	return nil
 }
 
-// func (g *Gateway) setupPatientServiceHandlers(service domain.Service) error {
-// 	err := patient_pb.RegisterPatientServiceHandlerFromEndpoint(g.ctx, g.gwMux, service.Endpoint, g.opts)
-// 	if err != nil {
-// 		g.logger.Error("Failed to register patient service handler from endpoint", "endpoint", service.Endpoint, "error", err)
-// 		return fmt.Errorf("failed to register patient service handler from endpoint %s: %w", service.Endpoint, err)
-// 	}
-// 	g.logger.Info("Registered gRPC-Gateway handlers via endpoint", "service", "patient-service", "endpoint", service.Endpoint)
-// 	return nil
-// }
+// setupWaterQualityServiceHandlers registers standard and custom handlers for the water quality service
+func (g *Gateway) setupWaterQualityServiceHandlers(service domain.Service) error {
+	// 1. Register Standard Handlers for all methods (except potentially the upload path)
+	err := water_quality_pb.RegisterWaterQualityServiceHandlerFromEndpoint(g.ctx, g.gwMux, service.Endpoint, g.opts)
+	if err != nil {
+		g.logger.Error("Failed to register standard water quality service handler from endpoint", "endpoint", service.Endpoint, "error", err)
+		// Decide if failure here is critical. If other methods are needed, maybe return error.
+		// return fmt.Errorf("failed to register standard water quality service handler from endpoint %s: %w", service.Endpoint, err)
+	} else {
+		g.logger.Info("Registered standard gRPC-Gateway handlers via endpoint", "service", "water-quality-service", "endpoint", service.Endpoint)
+	}
 
-// func (g *Gateway) setupAppointmentServiceHandlers(service domain.Service) error {
-// 	err := appointment_pb.RegisterAppointmentServiceHandlerFromEndpoint(g.ctx, g.gwMux, service.Endpoint, g.opts)
-// 	if err != nil {
-// 		g.logger.Error("Failed to register appointment service handler from endpoint", "endpoint", service.Endpoint, "error", err)
-// 		return fmt.Errorf("failed to register appointment service handler from endpoint %s: %w", service.Endpoint, err)
-// 	}
-// 	g.logger.Info("Registered gRPC-Gateway handlers via endpoint", "service", "appointment-service", "endpoint", service.Endpoint)
-// 	return nil
-// }
+	// 2. Register Custom Handlers (e.g., for binary upload)
+	customErr := registerWaterQualityCustomHandlers(g.gwMux, service) // Call the function from binary_file_handler.go
+	if customErr != nil {
+		g.logger.Error("Failed to register custom water quality service handlers", "endpoint", service.Endpoint, "error", customErr)
+		// Combine errors if both failed, or return only customErr if standard registration was okay or skipped erroring
+		if err != nil {
+			return fmt.Errorf("standard handler error: %w; custom handler error: %w", err, customErr)
+		}
+		return fmt.Errorf("failed to register custom water quality service handlers: %w", customErr)
+	} else {
+		g.logger.Info("Registered custom handlers (e.g., binary upload) for water quality service", "endpoint", service.Endpoint)
+	}
 
-// func (g *Gateway) setupStaffServiceHandlers(service domain.Service) error {
-// 	err := staff_pb.RegisterStaffServiceHandlerFromEndpoint(g.ctx, g.gwMux, service.Endpoint, g.opts)
-// 	if err != nil {
-// 		g.logger.Error("Failed to register staff service handler from endpoint", "endpoint", service.Endpoint, "error", err)
-// 		return fmt.Errorf("failed to register staff service handler from endpoint %s: %w", service.Endpoint, err)
-// 	}
-// 	g.logger.Info("Registered gRPC-Gateway handlers via endpoint", "service", "staff-service", "endpoint", service.Endpoint)
-// 	return nil
-// }
+	// Return the original standard handler registration error if it occurred and custom was okay
+	// Or return nil if both succeeded.
+	return err
+}

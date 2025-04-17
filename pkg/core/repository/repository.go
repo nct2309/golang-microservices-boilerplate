@@ -27,8 +27,8 @@ type BaseRepository[T entity.Entity] interface {
 	Transaction(ctx context.Context, fn func(txRepo BaseRepository[T]) error) error
 
 	// Bulk Operations
-	CreateMany(ctx context.Context, entities []*T) error
-	UpdateMany(ctx context.Context, entities []*T) error
+	CreateMany(ctx context.Context, entities []*T) ([]*T, error)
+	UpdateMany(ctx context.Context, entities []*T) ([]*T, error)
 	DeleteMany(ctx context.Context, ids []uuid.UUID, hardDelete bool) error
 }
 
@@ -226,31 +226,64 @@ func (r *GormBaseRepository[T]) Transaction(ctx context.Context, fn func(txRepo 
 
 // --- Bulk Operations Implementation ---
 
-// CreateMany adds multiple entities to the database in a single batch
-func (r *GormBaseRepository[T]) CreateMany(ctx context.Context, entities []*T) error {
+// CreateMany adds multiple entities to the database in a single batch.
+// Returns the slice of created entities with DB-generated fields populated.
+func (r *GormBaseRepository[T]) CreateMany(ctx context.Context, entities []*T) ([]*T, error) {
 	if len(entities) == 0 {
-		return nil
+		return entities, nil // Return empty slice, no error
 	}
-	return r.DB.WithContext(ctx).Create(entities).Error
+	err := r.DB.WithContext(ctx).Create(entities).Error
+	if err != nil {
+		return nil, err // Return nil slice on error
+	}
+	return entities, nil // Return the input slice, now populated by GORM
 }
 
-// UpdateMany updates multiple entities within a transaction.
-func (r *GormBaseRepository[T]) UpdateMany(ctx context.Context, entities []*T) error {
+// UpdateMany updates multiple entities within a transaction based on the non-zero fields in the input entities.
+// It then fetches and returns the full entities from the database after the update.
+func (r *GormBaseRepository[T]) UpdateMany(ctx context.Context, entities []*T) ([]*T, error) {
 	if len(entities) == 0 {
-		return nil
+		return entities, nil // Return empty slice, no error
 	}
-	return r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+
+	updatedIDs := make([]uuid.UUID, 0, len(entities))
+
+	// Perform updates within a transaction
+	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, entity := range entities {
 			id := (*entity).GetID()
 			if id == uuid.Nil {
 				return fmt.Errorf("entity in bulk update list missing ID")
 			}
+			// Perform partial update based on the fields present in the input entity
+			// Note: GORM's Updates only updates non-zero fields by default for structs.
+			// If you need to update specific fields to zero values, use map[string]interface{} or Select.
 			if err := tx.Model(entity).Where("id = ?", id).Updates(entity).Error; err != nil {
 				return fmt.Errorf("failed to update entity with ID %s during bulk update: %w", id, err)
 			}
+			updatedIDs = append(updatedIDs, id) // Collect ID for re-fetching
 		}
 		return nil
 	})
+
+	if err != nil {
+		return nil, err // Return nil slice on transaction error
+	}
+
+	// If updates were successful, fetch the full entities
+	if len(updatedIDs) > 0 {
+		var updatedEntities []*T
+		if err := r.DB.WithContext(ctx).Where("id IN (?)", updatedIDs).Find(&updatedEntities).Error; err != nil {
+			// Log the error, but perhaps still return the original entities or handle differently?
+			// Returning an error here might be confusing if the update itself succeeded.
+			// For now, let's return the fetch error.
+			return nil, fmt.Errorf("updates succeeded, but failed to fetch updated entities: %w", err)
+		}
+		return updatedEntities, nil
+	}
+
+	// Should not happen if input entities slice was not empty, but return empty slice just in case.
+	return []*T{}, nil
 }
 
 // DeleteMany removes multiple entities matching the provided IDs.

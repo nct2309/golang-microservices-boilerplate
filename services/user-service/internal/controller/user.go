@@ -213,15 +213,15 @@ func (s *userServer) CreateMany(ctx context.Context, req *pb.CreateUsersRequest)
 		entities = append(entities, userEntity)
 	}
 
-	// Call use case CreateMany with the slice of entities
-	err := s.uc.CreateMany(ctx, entities)
+	// Call use case CreateMany, capturing the returned entities and error
+	createdEntities, err := s.uc.CreateMany(ctx, entities)
 	if err != nil {
 		return nil, coreController.MapErrorToHttpStatus(err)
 	}
 
-	// Map the created entities (now with IDs) back to proto
-	usersProto := make([]*pb.User, 0, len(entities))
-	for _, userEntity := range entities {
+	// Map the returned created entities (now with IDs) back to proto
+	usersProto := make([]*pb.User, 0, len(createdEntities))
+	for _, userEntity := range createdEntities { // Use the returned slice
 		userProto, mapErr := s.mapper.EntityToProto(userEntity)
 		if mapErr != nil {
 			// Log or handle potential partial failure? For now, fail the whole request.
@@ -234,15 +234,16 @@ func (s *userServer) CreateMany(ctx context.Context, req *pb.CreateUsersRequest)
 }
 
 // UpdateMany implements proto.UserServiceServer.
+// Note: The proto currently defines the response as Empty.
+// This implementation calls the usecase which returns updated entities, but discards them to match the proto.
 func (s *userServer) UpdateMany(ctx context.Context, req *pb.UpdateUsersRequest) (*emptypb.Empty, error) {
 	if req == nil || len(req.Items) == 0 {
 		return &emptypb.Empty{}, nil // Nothing to update
 	}
 
 	// Map proto request items to the map expected by the use case
-	// updatesMap := make(map[uuid.UUID]userschema.UserUpdateDTO)
 	// Instead of mapping to DTOs, fetch entities and apply updates
-	updatedEntities := make([]*entity.User, 0, len(req.Items))
+	entitiesToUpdate := make([]*entity.User, 0, len(req.Items))
 	for i, item := range req.Items {
 		id, err := uuid.Parse(item.GetId())
 		if err != nil {
@@ -252,15 +253,12 @@ func (s *userServer) UpdateMany(ctx context.Context, req *pb.UpdateUsersRequest)
 		// Fetch existing entity
 		existingUser, err := s.uc.GetByID(ctx, id)
 		if err != nil {
-			// Decide how to handle: fail all, skip, collect errors?
-			// For now, fail all if any entity not found or other error occurs.
-			return nil, coreController.MapErrorToHttpStatus(err) // MapErrorToHttpStatus handles not found etc.
+			return nil, coreController.MapErrorToHttpStatus(err)
 		}
 
-		// Quick workaround: create a full UpdateUserRequest from the item and use ApplyProtoUpdateToEntity
-		// This is slightly inefficient but reuses existing logic.
+		// Create a temporary UpdateUserRequest from the item to reuse mapping logic
 		updateReq := &pb.UpdateUserRequest{
-			Id:         item.GetId(), // Keep ID for context, though not used by ApplyProtoUpdateToEntity directly
+			Id:         item.GetId(),
 			Username:   item.Username,
 			Email:      item.Email,
 			Password:   item.Password,
@@ -277,15 +275,16 @@ func (s *userServer) UpdateMany(ctx context.Context, req *pb.UpdateUsersRequest)
 			return nil, status.Errorf(http.StatusBadRequest, "failed to map update item %d (ID: %s): %v", i, id, err)
 		}
 
-		updatedEntities = append(updatedEntities, existingUser)
+		entitiesToUpdate = append(entitiesToUpdate, existingUser)
 	}
 
-	// Call the use case UpdateMany with the slice of updated entities
-	if err := s.uc.UpdateMany(ctx, updatedEntities); err != nil {
+	// Call the use case UpdateMany, capturing the returned updated entities and error
+	_, err := s.uc.UpdateMany(ctx, entitiesToUpdate) // Capture and discard the returned slice for now
+	if err != nil {
 		return nil, coreController.MapErrorToHttpStatus(err)
 	}
 
-	// Return empty response on success
+	// Return empty response on success as defined by the current proto
 	return &emptypb.Empty{}, nil
 }
 
